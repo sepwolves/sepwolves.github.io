@@ -1,0 +1,273 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Win8导航 -折翼天使资源社区Http://www.zheyitianshi.com
+</title>
+<meta name="keywords" content="Win8导航折翼天使资源社区Http://www.zheyitianshi.com
+" />
+<meta name="description" content="Win8导航折翼天使资源社区Http://www.zheyitianshi.com
+" />
+<link rel="stylesheet" href="css/metro.css">
+<script type="text/javascript" src="script/jquery-1.4.4.min.js"></script>
+<!--解决在ie6下png透明-->
+<!--[if IE 6]>
+	<script type="text/javascript" src="script/DD_belatedPNG.js" ></script>	
+	<script type="text/javascript">
+	DD_belatedPNG.fix('ul,li,img');
+	</script>
+<![endif]-->
+<script type="text/javascript" src="script/jquery.carousel.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function(){
+		var box_h=$("#metro_box").height();
+		var box_w=$("#metro_box").width();
+		$("#metro_box").css("margin-top",(($(window).height()-box_h)/2)-10+"px");
+		//var img_h=$(".arr_left img").height();
+		//var img_w=$(".arr_left img").width();
+		//$(".prev").css("position","absolute").css("left","10px").css("top",($(window).height()-img_h)/2);
+		//$(".next").css("position","absolute").css("right","10px").css("top",($(window).height()-img_h)/2);
+		//链接在新窗口打开
+		$(".a_link dd a").attr("target","_blank");
+		$(".a_link ul li>a").hover(function(){
+			var a_href=$(this).attr("href");			
+			$(this).siblings().find("a").attr("href",a_href);
+		});
+		
+		//切屏-----------------------------------------------------------------
+		$("#top dl dd a").click(function(){
+			var now_class=$(this).attr("class");	
+			$("#top dl dd a.a_index").attr("class","a_index");
+			$("#top dl dd a.a_mzdw").attr("class","a_mzdw");
+			$("#top dl dd a.a_spyy").attr("class","a_spyy");
+			$("#top dl dd a.a_xwzx").attr("class","a_xwzx");
+			$("#top dl dd a.a_gwtb").attr("class","a_gwtb");
+			$("#top dl dd a.a_yxyl").attr("class","a_yxyl");
+			$("#top dl dd a.a_sygj").attr("class","a_sygj");
+			$("#top dl dd a.a_yszy").attr("class","a_yszy");
+			$(this).attr("class",now_class).addClass(now_class+"_h");			
+			var index=$(this).index();
+			$("#metro_box dd").hide();
+			$("#metro_box dd").eq(index).toggle(100);
+			if(index==1){
+				$("body").attr("class","bg0");	
+			}
+			switch (index){
+				case 0:
+					$("body").attr("class","");						
+					break;
+				case 1:
+					$("body").attr("class","bg0");					
+					break;
+				case 2:
+					$("body").attr("class","bg1");						
+					break;
+				case 3:
+					$("body").attr("class","bg2");					
+					break;
+				case 4:
+					$("body").attr("class","bg3");					
+					break;
+				case 5:
+					$("body").attr("class","bg4");						
+					break;	
+				case 6:
+					$("body").attr("class","bg5");						
+					break;	
+				default :
+					$("body").attr("class","bg6");						
+			}
+			
+			<!--[if IE 6]>$("#metro_box dd").eq(index).show(300);<![endif]-->			
+		});
+	});
+</script>
+</head>
+<body>
+<!--头部导航开始-->
+<div id="top">
+  <dl>
+    <dt><a href="Http://www.zheyitianshi.com/" target="_blank">Win8网址导航</a></dt>
+    <dd>
+      <a class="a_index" href="/" target="_self">首页</a>
+      <a class="a_mzdw a_mzdw_h">名站导航</a>
+      <a class="a_spyy">视频音乐</a>
+      <a class="a_xwzx">新闻资讯</a>
+      <a class="a_gwtb">购物淘宝</a>
+      <a class="a_yxyl">游戏娱乐</a>
+      <a class="a_sygj">实用工具</a>
+      <a class="a_yszy">影视资源</a>
+      <a class="a_more" href="Http://www.zheyitianshi.com" target="_blank">更多</a></dd>
+  </dl>
+</div>
+<!--头部导航结束--> 
+<!--logo区开始-->
+<div id="metro_box" class="a_link">
+
+  <dl>
+    <dd style="display:none;"></dd>
+    <dd style="display:bolck;">
+    <!--名站导航-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.google.com.hk"><img src="images/logo_001.png" width="240" height="120" alt="google"></a><span><a href="#">谷歌</a></span></li>
+        <li id="logo_002"><a href="http://www.baidu.com/"><img src="images/logo_baidu.png" width="240" height="120" alt=""></a><span><a href="#">百度</a></span></li>
+        <li id="logo_003"><a href="http://www.youku.com"><img src="images/logo_003.png" width="240" height="120" alt=""></a><span><a href="#">优酷</a></span></li>
+        <li class="four" id="logo_004"><a href="http://weibo.com"><img src="images/logo_004.png" width="240" height="120" alt=""></a><span><a href="#">新浪微博</a></span></li>
+        <li class="one" id="logo_005"><a href="http://www.taobao.com/"><img src="images/logo_005.png" width="240" height="120" alt=""></a><span><a href="#">淘宝网</a></span></li>
+        <li id="logo_006"><a href="http://www.jd.com"><img src="images/logo_006.png" width="239" height="120" alt=""></a><span><a href="#">京东商城</a></span></li>
+        <li id="logo_007"><a href="http://www.amazon.cn"><img src="images/logo_007.png" width="240" height="120" alt=""></a><span><a href="#">亚马逊</a></span></li>
+        <li class="four" id="logo_008"><a href="http://www.dangdang.com"><img src="images/logo_008.png" width="240" height="120" alt=""></a><span><a href="#">当当网</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.3399.com/?fr=10097-1"><img src="images/logo_004d.png" width="240" height="120" alt="3399小游戏"></a><span><a href="#">3399小游戏</a></span></li>
+        <li id="logo_010"><a href="http://www.iqiyi.com"><img src="images/logo_009.png" width="240" height="120" alt=""></a><span><a href="#">奇艺网</a></span></li>
+        <li id="logo_011"><a href="http://www.renren.com"><img src="images/logo_011.png" width="240" height="120" alt=""></a><span><a href="#">人人网</a></span></li>
+        <li class="four" id="logo_012"><a href="http://www.vancl.com"><img src="images/logo_012.png" width="240" height="120" alt=""></a><span><a href="#">凡客诚品</a></span></li>
+        <li class="one" id="logo_013"><a href="http://www.sina.com.cn"><img src="images/logo_012c.png" width="240" height="120" alt=""></a><span><a href="#">新浪网</a></span></li>
+        <li id="logo_014"><a href="http://www.qq.com"><img src="images/logo_qq.png" width="240" height="120" alt=""></a><span><a href="#">腾讯网</a></span></li>
+        <li id="logo_015"><a href="http://www.sohu.com"><img src="images/logo_015.png" width="240" height="120" alt=""></a><span><a href="#">搜狐网</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.163.com"><img src="images/logo_016.png" width="240" height="120" alt=""></a><span><a href="#">网易</a></span></li>
+      </ul>
+    </dd>
+  
+   <dd style="display:none;">
+   <!--视频音乐-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.youku.com"><img src="images/logo_001b.png" width="240" height="120" alt="youku"></a><span><a href="#">优酷视频</a></span></li>
+        <li id="logo_002"><a href="http://www.iqiyi.com"><img src="images/logo_002b.png" width="240" height="120" alt="qiyi"></a><span><a href="#">奇艺网</a></span></li>
+        <li id="logo_003"><a href="http://www.tudou.com"><img src="images/logo_003b.png" width="240" height="120" alt=""></a><span><a href="#">土豆网</a></span></li>
+        <li class="four" id="logo_004"><a href="http://www.cntv.cn"><img src="images/logo_004b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">中国网络电视台</a></span></li>
+        <li class="one" id="logo_005"><a href="http://tv.sohu.com"><img src="images/logo_005b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">搜狐高清</a></span></li>
+        <li id="logo_006"><a href="http://www.ku6.com"><img src="images/logo_006b.png" width="240" height="120" alt=""></a><span><a href="#">酷六视频</a></span></li>
+        <li id="logo_007"><a href="http://www.56.com"><img src="images/logo_007b.png" width="240" height="120" alt=""></a><span><a href="#">56视频</a></span></li>
+        <li class="four" id="logo_008"><a href="http://v.qq.com"><img src="images/logo_008b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">腾讯视频</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.kankan.com/"><img src="images/logo_009b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">迅雷看看</a></span></li>
+        <li id="logo_010"><a href="http://www.pptv.com"><img src="images/logo_010b.png" width="240" height="120" alt=""></a><span><a href="#">PPTV</a></span></li>
+        <li id="logo_011"><a href="Http://www.zheyitianshi.com"><img src="images/logo_011b.png" width="240" height="120" alt=""></a><span><a href="#">凤凰视频</a></span></li>
+        <li class="four" id="logo_012"><a href="http://video.sina.com.cn"><img src="images/logo_012b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新浪视频</a></span></li>
+        <li class="one" id="logo_013"><a href="http://www.baofeng.com"><img src="images/logo_013b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">暴风影音</a></span></li>
+        <li id="logo_014"><a href="http://www.kugou.com"><img src="images/logo_014b.png" width="240" height="120" alt=""></a><span><a href="#">酷狗音乐</a></span></li>
+        <li id="logo_015"><a href="http://www.funshion.com"><img src="images/logo_015b.png" width="240" height="120" alt=""></a><span><a href="#">风行电影</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.010xr.com/"><img src="images/logo_016b.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">乐视网</a></span></li>
+      </ul>
+    </dd>
+    <dd style="display:none;">
+    <!--新闻资讯-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://news.baidu.com"><img src="images/logo_001c.png" width="240" height="120" alt="baidu"></a><span><a href="Http://www.zheyitianshi.com">百度新闻</a></span></li>
+        <li id="logo_002"><a href="http://news.sohu.com"><img src="images/logo_002c.png" width="240" height="120" alt="sohu"></a><span><a href="Http://www.zheyitianshi.com">搜狐新闻</a></span></li>
+        <li id="logo_003"><a href="http://www.people.com.cn"><img src="images/logo_003c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">人民网</a></span></li>
+        <li class="four" id="logo_004"><a href="http://www.cntv.cn"><img src="images/logo_004c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">中国网络电视台</a></span></li>
+        <li class="one" id="logo_005"><a href="http://www.yahoo.com.cn"><img src="images/logo_005c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">雅虎中国</a></span></li>
+        <li id="logo_006"><a href="http://www.ifeng.com"><img src="images/logo_ifeng.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">凤凰网</a></span></li>
+        <li id="logo_007"><a href="http://www.huanqiu.com"><img src="images/logo_007c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">环球网</a></span></li>
+        <li class="four" id="logo_008"><a href="http://news.qq.com"><img src="images/logo_008c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">腾讯新闻</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.21cn.com"><img src="images/logo_009c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">21cn新闻</a></span></li>
+        <li id="logo_010"><a href="http://www.china.com"><img src="images/logo_010c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">中华网</a></span></li>
+        <li id="logo_011"><a href="http://www.bjnews.com.cn"><img src="images/logo_011c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新京报网</a></span></li>
+        <li class="four" id="logo_012"><a href="http://news.sina.com"><img src="images/logo_012c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新浪新闻</a></span></li>
+        <li class="one" id="logo_013"><a href="http://www.zaobao.com"><img src="images/logo_013c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">联合早报</a></span></li>
+        <li id="logo_014"><a href="http://www.xinhuanet.com"><img src="images/logo_014c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新华网</a></span></li>
+        <li id="logo_015"><a href="http://www.chinanews.com/"><img src="images/logo_015c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">中国新闻网</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.010xr.com/"><img src="images/logo_016c.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">和讯网</a></span></li>
+      </ul>
+    </dd>
+    <dd style="display:none;">
+    <!--购物淘宝-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.taobao.com/"><img src="images/logo_001a.png" width="240" height="120" alt="taobao"></a><span><a href="Http://www.zheyitianshi.com">淘宝网</a></span></li>
+        <li id="logo_002"><a href="http://www.jd.com"><img src="images/logo_002a.png" width="240" height="120" alt="京东商城"></a><span><a href="Http://www.zheyitianshi.com">京东商城</a></span></li>
+        <li id="logo_003"><a href="http://www.vancl.com"><img src="images/logo_003a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">凡客诚品</a></span></li>
+        <li class="four" id="logo_004"><a href="http://www.yihaodian.com/"><img src="images/logo_004a.png" width="240" height="120" alt=""></a><span><a href="#">1号店超市</a></span></li>
+        <li class="one" id="logo_005"><a href="http://www.amazon.cn"><img src="images/logo_005a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">亚马逊</a></span></li>
+        <li id="logo_006"><a href="http://www.newegg.com.cn"><img src="images/logo_006a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新蛋商城</a></span></li>
+        <li id="logo_007"><a href="http://www.m18.com"><img src="images/logo_007a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">麦考林</a></span></li>
+        <li class="four" id="logo_008"><a href="http://www.dangdang.com"><img src="images/logo_008a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">当当网</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.suning.com/"><img src="images/logo_009a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">苏宁易购</a></span></li>
+        <li id="logo_010"><a href="http://http://www.vipshop.com/"><img src="images/logo_010a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">唯品会</a></span></li>
+        <li id="logo_011"><a href="http://s.click.taobao.com/t?e=zGU34CA7K%2BPkqB05%2Bm7rfGKas1PIKp0U37pZuBotzOg7OjeU9mIWS5%2B5UROBz6sq4fiHePnGhf6UrWuOtfD2G6QGcAHIXpjhEtESpuqsRo0a&pid=mm_29437161_0_0"><img src="images/logo_011a.png" width="240" height="120" alt=""></a><span><a href="#">淘宝聚划算</a></span></li>
+        <li class="four" id="logo_012"><a href="http://www.gome.com.cn/"><img src="images/logo_012a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">国美电器</a></span></li>
+        <li class="one" id="logo_013a"><a href="http://bj.meituan.com/"><img src="images/logo_013a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">美团网</a></span></li>
+        <li id="logo_003"><a href="http://www.moonbasa.com/"><img src="images/logo_014a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">梦芭莎</a></span></li>
+        <li id="logo_015a"><a href="http://s.click.taobao.com/t?e=zGU34CA7K%2BPkqB05%2Bm7rfGGjlY60oHcc7bkKOQnIUn1QqiBfh0EDuhSTDiNLkN3J4tOyYuvzuQuhDq3HtsvWBKcstCb7MQ5koC5V4MYlSvu5DkI8cYbj7A%3D%3D"><img src="images/logo_015a.png" width="240" height="120" alt=""></a><span><a href="#">淘宝商城</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.alipay.com"><img src="images/logo_016a.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">支付宝</a></span></li>
+      </ul>
+    </dd>
+    <dd style="display:none;">
+    <!--游戏娱乐-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.3399.com/?fr=10097-1"><img src="images/logo_004d.png" width="240" height="120" alt=""></a><span><a href="#">3399小游戏</a></span></li>
+        <li id="logo_002"><a href="http://www.2233dh.com/link/21"><img src="images/logo_002d.png" width="240" height="120" alt="JJ比赛"></a><span><a href="#">JJ比赛</a></span></li>
+        <li id="logo_003"><a href="http://www.17173.com/"><img src="images/logo_003d.png" width="240" height="120" alt=""></a><span><a href="#">17173游戏</a></span></li>
+        <li class="four" id="logo_004"><a href="http://www.4399.com/"><img src="images/logo_001d.png" width="240" height="120" alt="4399小游戏"></a><span><a href="#">4399小游戏</a></span></li>
+        <li class="one" id="logo_005"><a href="http://click.t3nlink.com/link/140699"><img src="images/logo_005d.png" width="240" height="120" alt=""></a><span><a href="#">神仙道</a></span></li>
+        <li id="logo_006"><a href="http://www.shandagames.com/web/"><img src="images/logo_006d.png" width="240" height="120" alt=""></a><span><a href="#">盛大游戏</a></span></li>
+        <li id="logo_007"><a href="http://game.qq.com/"><img src="images/logo_007d.png" width="240" height="120" alt=""></a><span><a href="#">腾讯游戏</a></span></li>
+        <li class="four" id="logo_008"><a href="http://nie.163.com/"><img src="images/logo_008d.png" width="240" height="120" alt=""></a><span><a href="#">网易游戏</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.yinyuetai.com"><img src="images/logo_009d.png" width="240" height="120" alt=""></a><span><a href="#">音悦台mtv</a></span></li>
+        <li id="logo_010"><a href="http://www.huaban.com"><img src="images/logo_010d.png" width="240" height="120" alt=""></a><span><a href="#">花瓣网</a></span></li>
+        <li id="logo_011"><a href="http://www.2233dh.com/tv.htm"><img src="images/logo_011d.png" width="240" height="120" alt=""></a><span><a href="#">V电影</a></span></li>
+        <li class="four" id="logo_012"><a href="http://www.mtime.com"><img src="images/logo_012d.png" width="240" height="120" alt=""></a><span><a href="#">时光网</a></span></li>
+        <li class="one" id="logo_013"><a href="http://www.2233dh.com/book.htm"><img src="images/logo_013d.png" width="240" height="120" alt=""></a><span><a href="#">言情小说网</a></span></li>
+        <li id="logo_014"><a href="http://www.zongheng.com"><img src="images/logo_014d.png" width="240" height="120" alt=""></a><span><a href="#">纵横中文网</a></span></li>
+        <li id="logo_015"><a href="http://douban.fm/"><img src="images/logo_015d.png" width="240" height="120" alt=""></a><span><a href="#">豆瓣FM</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.qidian.com/"><img src="images/logo_016d.png" width="240" height="120" alt=""></a><span><a href="#">起点中文网</a></span></li>
+      </ul>
+    </dd>
+    <dd style="display:none;">
+    <!--实用工具-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.kuaidi100.com/"><img src="images/logo_016f.png" width="240" height="120" alt=""></a><span><a href="#">快递查询</a></span></li>
+        <li id="logo_002"><a href="http://115.com"><img src="images/logo_002e.png" width="240" height="120" alt="115网盘"></a><span><a href="#">115网盘</a></span></li>
+        <li id="logo_003"><a href="http://translate.google.com.hk/"><img src="images/logo_003e.png" width="240" height="120" alt=""></a><span><a href="">谷歌翻译</a></span></li>
+        <li class="four" id="logo_004"><a href="http://weather.news.sina.com.cn/"><img src="images/logo_001e.png" width="240" height="120" alt="天气预报"></a><span><a href="#">天气预报</a></span></li>
+        <li class="one" id="logo_005"><a href="http://p.yiqifa.com/c?s=f82e466a&w=660466&c=297&i=19323&l=0&e=win8&t=http://u.ctrip.com/union/redirect.aspx"><img src="images/logo_005e.png" width="240" height="120" alt=""></a><span><a href="#">机票酒店</a></span></li>
+        <li id="logo_006"><a href="http://web.qq.com"><img src="images/logo_006e.png" width="240" height="120" alt=""></a><span><a href="#">Web QQ</a></span></li>
+        <li id="logo_007"><a href="http://mail.163.com"><img src="images/logo_007e.png" width="240" height="120" alt=""></a><span><a href="#">网易邮箱</a></span></li>
+        <li class="four" id="logo_008"><a href="http://union.500.com/pages/interfacehezuo.php?coopid=5558&adid=97&jumpurl=http%3A%2F%2Fkaijiang.500.com%2F"><img src="images/logo_008e.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">彩票开奖</a></span></li>
+        <li class="one" id="logo_009"><a href="http://p.yiqifa.com/c?s=de065bbc&w=660466&c=6451&i=19382&l=0&e=win8&t=http://tj.tieyou.com/gw.php"><img src="images/logo_009e.png" width="240" height="120" alt=""></a><span><a href="#">火车票订购</a></span></li>
+        <li id="logo_010"><a href="http://map.baidu.com"><img src="images/logo_010e.png" width="240" height="120" alt=""></a><span><a href="#">百度地图</a></span></li>
+        <li id="logo_011"><a href="http://10086.cn/"><img src="images/logo_011e.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">中国移动网上营业厅</a></span></li>
+        <li class="four" id="logo_012"><a href="http://www.weizhangwang.com/"><img src="images/logo_012e.png" width="240" height="120" alt=""></a><span><a href="#">交通违章</a></span></li>
+        <li class="one" id="logo_013"><a href="http://dl.union.ijinshan.com/duba/download.php?cid=44&sid=104480"><img src="images/logo_013e.png" width="240" height="120" alt=""></a><span><a href="#">金山毒霸</a></span></li>
+        <li id="logo_014"><a href="http://www.8684.cn"><img src="images/logo_014e.png" width="240" height="120" alt=""></a><span><a href="#">公交火车查询</a></span></li>
+        <li id="logo_015"><a href="http://maps.google.com.hk/"><img src="images/logo_015e.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">谷歌地图</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.010xr.com/"><img src="images/logo_016e.png" width="240" height="120" alt=""></a><span><a href="#">万年历</a></span></li>
+      </ul>
+    </dd>
+     <dd style="display:none;">
+     <!--影视资源-->
+      <ul>
+        <li class="one" id="logo_001"><a href="http://www.81baobao.com/"><img src="images/logo_baobao.png" width="240" height="120" alt=""></a><span><a href="#">八一宝宝儿歌下载</a></span></li>
+        <li id="logo_002"><a href="http://www.verycd.com"><img src="images/logo_002f.png" width="240" height="120" alt="电驴"></a><span><a href="#">电驴资源</a></span></li>
+        <li id="logo_003"><a href="http://ishare.iask.sina.com.cn/"><img src="images/logo_003f.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">新浪共享资料</a></span></li>
+        <li class="four" id="logo_004"><a href="http://www.piaohua.com"><img src="images/logo_004f.png" width="240" height="120" alt=""></a><span><a href="#">飘花资源网</a></span></li>
+        <li class="one" id="logo_005"><a href="http://www.dy2018.com"><img src="images/logo_005f.png" width="240" height="120" alt=""></a><span><a href="#">电影天堂</a></span></li>
+        <li id="logo_006"><a href="http://daquan.xunlei.com"><img src="images/logo_006f.png" width="240" height="120" alt=""></a><span><a href="#">迅雷大全</a></span></li>
+        <li id="logo_007"><a href="http://www.2233dh.com/tv.htm"><img src="images/logo_007f.png" width="240" height="120" alt=""></a><span><a href="#">好看的电影</a></span></li>
+        <li class="four" id="logo_008"><a href="http://www.ffdy.cc"><img src="images/logo_008f.png" width="240" height="120" alt=""></a><span><a href="#">放放电影</a></span></li>
+        <li class="one" id="logo_009"><a href="http://www.skycn.com"><img src="images/logo_009f.png" width="240" height="120" alt=""></a><span><a href="Http://www.zheyitianshi.com">天空软件站</a></span></li>
+        <li id="logo_010"><a href="http://www.newhua.com"><img src="images/logo_010f.png" width="240" height="120" alt=""></a><span><a href="#">华军软件园</a></span></li>
+        <li id="logo_011"><a href="http://www.xiazaiba.com"><img src="images/logo_011f.png" width="240" height="120" alt=""></a><span><a href="#">下载吧</a></span></li>
+        <li class="four" id="logo_012"><a href="http://www.7060.com"><img src="images/logo_012f.png" width="240" height="120" alt=""></a><span><a href="#">7060手机电影</a></span></li>
+        <li class="one" id="logo_013"><a href="http://www.a67.com"><img src="images/logo_013f.png" width="240" height="120" alt=""></a><span>a67手机电影网</span></li>
+        <li id="logo_014"><a href="http://www.y80s.net/"><img src="images/logo_014f.png" width="240" height="120" alt=""></a><span><a href="#">80s手机电影网</a></span></li>
+        <li id="logo_015"><a href="http://www.txt99.com/"><img src="images/logo_015f.png" width="240" height="120" alt=""></a><span><a href="#">久久小说下载</a></span></li>
+        <li class="four" id="logo_016"><a href="http://www.ziyuanhai.com/"><img src="images/logo_001f.png" width="240" height="120" alt="google"></a><span><a href="Http://ImWWile.Com">唐老鼠</a></span></li>
+      </ul>
+    </dd>
+  </dl>
+  
+ 
+</div>
+<!--logo区结束--> 
+<!--左右箭头开始-->
+<div class="prev"><img src="images/arr_left.png" width="31" height="67"></div>
+<div class="next"><img src="images/arr_right.png" width="31" height="67"></div>
+<!--左右箭头结束-->
+<!-- Baidu Button END -->
+<span style="display:none;">
+<script src="script/tj.js"></script>
+</span>
+
+</body>
+</html>

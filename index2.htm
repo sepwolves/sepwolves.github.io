@@ -1,0 +1,111 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>探索交易的秘密
+</title>
+<meta name="keywords" content="探索交易的秘密" />
+<meta name="description" content="Win8导航折翼天使资源社区Http://www.zheyitianshi.com
+" />
+<link rel="stylesheet" href="css/metro.css">
+<script type="text/javascript" src="script/jquery-1.4.4.min.js"></script>
+<!--解决在ie6下png透明-->
+<!--[if IE 6]>
+	<script type="text/javascript" src="script/DD_belatedPNG.js" ></script>	
+	<script type="text/javascript">
+	DD_belatedPNG.fix('ul,li,img');
+	</script>
+<![endif]-->
+<script type="text/javascript" src="script/jquery.carousel.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function(){
+		var box_h=$("#metro_box").height();
+		var box_w=$("#metro_box").width();
+		$("#metro_box").css("margin-top",(($(window).height()-box_h)/2)-10+"px");
+		//var img_h=$(".arr_left img").height();
+		//var img_w=$(".arr_left img").width();
+		//$(".prev").css("position","absolute").css("left","10px").css("top",($(window).height()-img_h)/2);
+		//$(".next").css("position","absolute").css("right","10px").css("top",($(window).height()-img_h)/2);
+		//链接在新窗口打开
+		$(".a_link dd a").attr("target","_blank");
+		$(".a_link ul li>a").hover(function(){
+			var a_href=$(this).attr("href");			
+			$(this).siblings().find("a").attr("href",a_href);
+		});
+		
+		//切屏-----------------------------------------------------------------
+		$("#top dl dd a").click(function(){
+			var now_class=$(this).attr("class");	
+			$("#top dl dd a.a_index").attr("class","a_index");
+			$("#top dl dd a.a_mzdw").attr("class","a_mzdw");
+			$("#top dl dd a.a_spyy").attr("class","a_spyy");
+			$("#top dl dd a.a_xwzx").attr("class","a_xwzx");
+			$("#top dl dd a.a_gwtb").attr("class","a_gwtb");
+			$("#top dl dd a.a_yxyl").attr("class","a_yxyl");
+			$("#top dl dd a.a_sygj").attr("class","a_sygj");
+			$("#top dl dd a.a_yszy").attr("class","a_yszy");
+			$(this).attr("class",now_class).addClass(now_class+"_h");			
+			var index=$(this).index();
+			$("#metro_box dd").hide();
+			$("#metro_box dd").eq(index).toggle(100);
+			if(index==1){
+				$("body").attr("class","bg0");	
+			}
+			switch (index){
+				case 0:
+					$("body").attr("class","");						
+					break;
+				case 1:
+					$("body").attr("class","bg0");					
+					break;
+				case 2:
+					$("body").attr("class","bg1");						
+					break;
+				case 3:
+					$("body").attr("class","bg2");					
+					break;
+				case 4:
+					$("body").attr("class","bg3");					
+					break;
+				case 5:
+					$("body").attr("class","bg4");						
+					break;	
+				case 6:
+					$("body").attr("class","bg5");						
+					break;	
+				default :
+					$("body").attr("class","bg6");						
+			}
+			
+			<!--[if IE 6]>$("#metro_box dd").eq(index).show(300);<![endif]-->			
+		});
+	});
+</script>
+</head>
+<body>
+<!--logo区开始-->
+<div id="metro_box" class="a_link">
+
+  <dl>
+    <dd style="display:none;"></dd>
+    <dd style="display:bolck;">
+    <!--名站导航-->
+      <ul>
+        <li class="one" id="logo_013"><a href="https://sepwolves.github.com/work"><img src="images/book.jpg" width="480" height="240" alt=""></a><span><a href="#">My Work</a></span></li>
+        <li id="logo_014"><a href="https://sepwolves.github.com/life"><img src="images/beiji.jpg" width="480" height="240" alt=""></a><span><a href="#">my life</a></span></li>
+      </ul>
+    </dd>
+  
+   <dd style="display:none;">
+<!--左右箭头开始-->
+<div class="prev"><img src="images/arr_left.png" width="31" height="67"></div>
+<div class="next"><img src="images/arr_right.png" width="31" height="67"></div>
+<!--左右箭头结束-->
+<!-- Baidu Button END -->
+<span style="display:none;"
+<script src="script/tj.js"></script>
+</span>
+
+</body>
+</html>
