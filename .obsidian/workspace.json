@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "source/_posts/大家好，这是我的新笔记。.md",
+                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "大家好，这是我的新笔记。"
+              "title": "Hexo-Blog-Setup-Report"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "source/_posts/大家好，这是我的新笔记。.md",
+                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "大家好，这是我的新笔记。 的反向链接列表"
+              "title": "Hexo-Blog-Setup-Report 的反向链接列表"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "source/_posts/大家好，这是我的新笔记。.md",
+                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "大家好，这是我的新笔记。 的出链列表"
+              "title": "Hexo-Blog-Setup-Report 的出链列表"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "source/_posts/大家好，这是我的新笔记。.md",
+                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大家好，这是我的新笔记。 的大纲"
+              "title": "Hexo-Blog-Setup-Report 的大纲"
             }
           }
         ]
@@ -186,6 +186,12 @@
   },
   "active": "1123d2285d02e2ec",
   "lastOpenFiles": [
+    "source/_posts/大家好，这是我的新笔记。.md",
+    "source/_posts/Hexo-Blog-Setup-Report.md",
+    "themes/keep/package.json",
+    "themes/keep/_config.yml",
+    "themes/keep/README.md",
+    "themes/keep/CHANGELOG.md",
     "themes/keep/source/css/layout/_partial/post/reward-author.styl",
     "themes/keep/source/css/layout/_partial/post/post-tools.styl",
     "themes/keep/source/css/layout/_partial/post/post-share.styl",
@@ -194,9 +200,6 @@
     "themes/keep/source/css/layout/_partial/comment/waline.styl",
     "themes/keep/source/css/layout/_partial/comment/valine.styl",
     "themes/keep/source/css/layout/_partial/comment/twikoo.styl",
-    "themes/keep/source/css/layout/_partial/comment/gitalk.styl",
-    "themes/keep/source/css/layout/_partial/comment/comment.styl",
-    "themes/keep/source/css/layout/_template/page-template.styl",
     "themes/keep/source/images/brands/vercel.png",
     "themes/keep/source/images/brands/upyun.png",
     "themes/keep/source/images/brands/tencent_cloud.png",
@@ -212,7 +215,6 @@
     "scaffolds/post.md",
     "scaffolds/draft.md",
     "scaffolds/page.md",
-    "source/_posts/大家好，这是我的新笔记。.md",
     "source/_posts/My-New-Blog-Start.md",
     "node_modules/acorn/README.md",
     "node_modules/acorn/CHANGELOG.md",
@@ -229,8 +231,6 @@
     "node_modules/doctypes/HISTORY.md",
     "node_modules/pug-filters/README.md",
     "node_modules/constantinople/README.md",
-    "node_modules/token-stream/HISTORY.md",
-    "node_modules/pug-filters/CHANGELOG.md",
-    "node_modules/pug-parser/README.md"
+    "node_modules/token-stream/HISTORY.md"
   ]
 }
