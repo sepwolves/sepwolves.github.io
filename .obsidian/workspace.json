@@ -11,10 +11,14 @@
             "id": "1123d2285d02e2ec",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "source/_posts/大家好，这是我的新笔记。.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "新标签页"
+              "title": "大家好，这是我的新笔记。"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "source/_posts/大家好，这是我的新笔记。.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "反向链接"
+              "title": "大家好，这是我的新笔记。 的反向链接列表"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "source/_posts/大家好，这是我的新笔记。.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "出链"
+              "title": "大家好，这是我的新笔记。 的出链列表"
             }
           },
           {
@@ -150,12 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "source/_posts/大家好，这是我的新笔记。.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
+              "title": "大家好，这是我的新笔记。 的大纲"
             }
           }
         ]
@@ -179,17 +186,21 @@
   },
   "active": "1123d2285d02e2ec",
   "lastOpenFiles": [
-    "node_modules/resolve/lib/core.js",
-    "node_modules/resolve/lib/core.json",
-    "node_modules/resolve/lib/async.js",
-    "node_modules/resolve/lib/sync.js",
-    "node_modules/resolve/lib/normalize-options.js",
-    "node_modules/resolve/lib/node-modules-paths.js",
-    "node_modules/resolve/lib/is-core.js",
-    "node_modules/resolve/lib/homedir.js",
-    "node_modules/resolve/lib/caller.js",
-    "node_modules/resolve/lib",
-    "GITHUB_ACTION_CONFIG.txt",
+    "scaffolds/post.md",
+    "scaffolds/draft.md",
+    "scaffolds/page.md",
+    "source/_posts/大家好，这是我的新笔记。.md",
+    "source/_posts/My-New-Blog-Start.md",
+    "node_modules/sax/lib/sax.js",
+    "node_modules/sax/lib",
+    "node_modules/hexo-renderer-stylus/lib/renderer.js",
+    "node_modules/hexo-renderer-stylus/lib",
+    "node_modules/@babel/types/lib/retrievers/getFunctionName.js.map",
+    "node_modules/@babel/types/lib/retrievers/getOuterBindingIdentifiers.js.map",
+    "node_modules/@babel/types/lib/retrievers/getOuterBindingIdentifiers.js",
+    "node_modules/@babel/types/lib/retrievers/getFunctionName.js",
+    "node_modules/@babel/types/lib/retrievers/getBindingIdentifiers.js.map",
+    "node_modules/@babel/types/lib/retrievers/getBindingIdentifiers.js",
     "node_modules/acorn/README.md",
     "node_modules/acorn/CHANGELOG.md",
     "node_modules/promise/Readme.md",
@@ -211,10 +222,6 @@
     "node_modules/pug-parser/HISTORY.md",
     "node_modules/pug-error/README.md",
     "node_modules/pug-lexer/README.md",
-    "node_modules/pug/README.md",
-    "node_modules/hexo-renderer-pug/README.md",
-    "node_modules/jstransformer/LICENSE.md",
-    "node_modules/pug-linker/README.md",
     "node_modules/highlight.js/styles/brown-papersq.png",
     "node_modules/highlight.js/styles/pojoaque.jpg",
     "node_modules/hexo-theme-landscape/source/css/images/banner.jpg",
