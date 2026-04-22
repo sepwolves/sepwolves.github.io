@@ -193,10 +193,10 @@ website_count:
   # busuanzi
   # See: http://ibruce.info/2015/04/04/busuanzi/
   busuanzi_count:
-    enable: false     # Option values: true | false
-    site_uv: false    # Option values: true | false
-    site_pv: false    # Option values: true | false
-    page_pv: false    # Option values: true | false
+    enable: true      # Option values: true | false
+    site_uv: true     # Option values: true | false
+    site_pv: true     # Option values: true | false
+    page_pv: true     # Option values: true | false
 
 
 # ---------------------------------------------------------------------------------------
