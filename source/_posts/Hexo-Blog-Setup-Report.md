@@ -1,7 +1,7 @@
 ---
-title: "从零搭建：Hexo 博客 + GitHub Actions 自动化部署全记录"
+title: 从零搭建：Hexo 博客 + GitHub Actions 自动化部署全记录
 date: 2026-04-21 20:20:00
-updated: 
+updated:
 tags:
   - Hexo
   - GitHub Actions
@@ -9,12 +9,12 @@ tags:
   - 教程
 categories:
   - 技术探索
-keywords: "Hexo, Keep Theme, GitHub Actions, SSH Config"
-description: "记录将个人静态网页迁移至 Hexo 框架并实现 GitHub 自动部署的全过程。"
+keywords: Hexo, Keep Theme, GitHub Actions, SSH Config
+description: 记录将个人静态网页迁移至 Hexo 框架并实现 GitHub 自动部署的全过程。
 top_img:
 comments: true
 toc: true
-sticky: 1
+sticky:
 ---
 
 ## 🚀 项目背景

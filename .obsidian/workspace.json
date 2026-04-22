@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "source/_posts/这是我用template生成的日记内容.md",
+                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "这是我用template生成的日记内容"
+              "title": "Hexo-Blog-Setup-Report"
             }
           }
         ],
@@ -216,14 +216,17 @@
   },
   "active": "3a09627438a43306",
   "lastOpenFiles": [
-    "source/_posts/Untitled 1.md",
-    "source/_posts/这是我用template生成的日记内容.md",
-    "scaffolds/newnotetemplate.md",
-    "source/_posts/Untitled.md",
+    "source/_posts/20260422180857.md",
     "source/_posts/Hexo-Blog-Setup-Report.md",
-    "scaffolds/post.md",
-    "source/_posts/未命名.md",
+    "source/_posts/Untitled 1.md",
+    "source/_posts/Untitled.md",
+    "source/_posts/大家好，这是我的新笔记。.md",
+    "source/_posts/这是我生成的第二个文件.md",
+    "scaffolds/newnotetemplate.md",
+    "source/_posts/这是我用template生成的日记内容.md",
     "source/_posts/2026-04-22.md",
+    "source/_posts/未命名.md",
+    "scaffolds/post.md",
     "scaffold",
     "source/_posts/2026/04/22.md",
     "source/_posts/2026/04",
@@ -231,7 +234,6 @@
     "source/_posts/2026/04/2026-04-22.md",
     "source/_posts/hello-world.md",
     "source/_posts/My-New-Blog-Start.md",
-    "source/_posts/大家好，这是我的新笔记。.md",
     "themes/keep/package.json",
     "themes/keep/_config.yml",
     "themes/keep/README.md",
@@ -259,8 +261,6 @@
     "node_modules/acorn/CHANGELOG.md",
     "node_modules/promise/Readme.md",
     "node_modules/with/README.md",
-    "node_modules/babel-walk/README.md",
-    "node_modules/babel-walk/LICENSE.md",
-    "node_modules/pug-runtime/README.md"
+    "node_modules/babel-walk/README.md"
   ]
 }
