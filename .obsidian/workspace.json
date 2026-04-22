@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "source/_posts/Hexo-Blog-Setup-Report.md",
+                "file": "source/_posts/20260422180857.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Hexo-Blog-Setup-Report"
+              "title": "20260422180857"
             }
           }
         ],
@@ -216,6 +216,7 @@
   },
   "active": "3a09627438a43306",
   "lastOpenFiles": [
+    "source/_posts/2026-04-22.md",
     "source/_posts/20260422180857.md",
     "source/_posts/Hexo-Blog-Setup-Report.md",
     "source/_posts/Untitled 1.md",
@@ -224,7 +225,6 @@
     "source/_posts/这是我生成的第二个文件.md",
     "scaffolds/newnotetemplate.md",
     "source/_posts/这是我用template生成的日记内容.md",
-    "source/_posts/2026-04-22.md",
     "source/_posts/未命名.md",
     "scaffolds/post.md",
     "scaffold",
