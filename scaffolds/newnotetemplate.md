@@ -9,6 +9,5 @@ categories: []
 await tp.file.rename(tp.date.now("YYYYMMDDHHmmss"))
 %>
 
-# <% tp.date.now("YYYYMMDDHHmmss") %>
 
 <% tp.file.cursor() %>
