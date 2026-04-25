@@ -29,7 +29,41 @@ jobs:
       - name: 4. 安装依赖
         run: npm install && npm install hexo-renderer-stylus@2.1.0
 
-      - name: 5. 执行 Hexo 静态生成
+      - name: 5. 自动整理小说格式与排序
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'source/_posts/fan-yuan-fu-song';
+          if (!fs.existsSync(dir)) {
+            console.log('目录不存在，跳过排序步骤');
+            return;
+          }
+          fs.readdirSync(dir).forEach(file => {
+            if (!file.endsWith('.md')) return;
+            const filePath = path.join(dir, file);
+            let content = fs.readFileSync(filePath, 'utf8');
+            
+            // 1. 统一分类写法
+            content = content.replace(/category: .*/g, 'categories: [反元复宋]');
+            
+            // 2. 提取标题中的序号实现正序排列 (sticky 权重)
+            const titleMatch = content.match(/title:\s*\"?(\d+)_/);
+            if (titleMatch) {
+              const seq = parseInt(titleMatch[1]);
+              const weight = 10000 - seq;
+              if (content.includes('sticky:')) {
+                content = content.replace(/sticky: .*/, 'sticky: ' + weight);
+              } else {
+                content = content.replace('---', '---\nsticky: ' + weight);
+              }
+              console.log('已处理: ' + file + ' -> sticky: ' + weight);
+            }
+            fs.writeFileSync(filePath, content);
+          });
+          "
+
+      - name: 6. 执行 Hexo 静态生成
         run: npx hexo generate
 
       - name: 6. 上传产物并发布
