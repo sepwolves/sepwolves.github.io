@@ -9,10 +9,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. 拉取博客引擎库 (包含主题子模块)
+      - name: 1. 拉取博客引擎库
         uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: 2. 抓取外部内容库 (小说/笔记)
         uses: actions/checkout@v4
