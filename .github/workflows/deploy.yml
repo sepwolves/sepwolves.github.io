@@ -1,42 +1,50 @@
 name: Deploy Hexo
 
-on:
-  push:
+    on:
+    push:
     branches:
-      - master # 监听 master 分支的推送
+      - master # 监听博客主库的变动
 
-jobs:
-  build-and-deploy:
+    jobs:
+    build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 1. 拉取博客引擎库 (sepwolves.github.io)
+        uses: actions/checkout@v4
+
+      - name: 2. 抓取外部内容库 (FanYuanFuSong)
         uses: actions/checkout@v4
         with:
-          submodules: true # 如果有子模块则一并拉取
+          repository: sepwolves/FanYuanFuSong
+          # 关键：即使是同账号，私有库仍需在博客库配置 REPO_B_TOKEN
+          token: ${{ secrets.REPO_B_TOKEN }} 
+          # 映射到 Hexo 的文章存放路径
+          path: source/_posts/fan-yuan-fu-song 
 
-      - name: Setup Node.js
+      - name: 3. Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: 4. 安装依赖
         run: npm install
 
-      - name: Generate Static Files
+      - name: 5. 执行 Hexo 静态生成
+        # 此时“反元复宋”已被注入到 posts 目录下，会一并参与编译。
         run: npx hexo generate
 
-      - name: Upload Pages Artifact
+      - name: 6. 上传产物并发布
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
-  deploy:
+    deploy:
     needs: build-and-deploy
     runs-on: ubuntu-latest
     permissions:
-      pages: write      # 必须：拥有 Pages 写入权限
-      id-token: write   # 必须：用于身份验证
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
