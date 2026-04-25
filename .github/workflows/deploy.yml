@@ -1,24 +1,23 @@
 name: Deploy Hexo
 
-    on:
-    push:
+on:
+  push:
     branches:
-      - master # 监听博客主库的变动
+      - master # 监听博客主库的变动（请确认为 master 或 main）
 
-    jobs:
-    build-and-deploy:
+jobs:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. 拉取博客引擎库 (sepwolves.github.io)
+      - name: 1. 拉取博客引擎库
         uses: actions/checkout@v4
 
-      - name: 2. 抓取外部内容库 (FanYuanFuSong)
+      - name: 2. 抓取外部内容库
         uses: actions/checkout@v4
         with:
           repository: sepwolves/FanYuanFuSong
-          # 关键：即使是同账号，私有库仍需在博客库配置 REPO_B_TOKEN
+          ref: main  # 如果小说库是 main，请保持此处为 main
           token: ${{ secrets.REPO_B_TOKEN }} 
-          # 映射到 Hexo 的文章存放路径
           path: source/_posts/fan-yuan-fu-song 
 
       - name: 3. Setup Node.js
@@ -31,7 +30,6 @@ name: Deploy Hexo
         run: npm install
 
       - name: 5. 执行 Hexo 静态生成
-        # 此时“反元复宋”已被注入到 posts 目录下，会一并参与编译。
         run: npx hexo generate
 
       - name: 6. 上传产物并发布
@@ -39,7 +37,7 @@ name: Deploy Hexo
         with:
           path: ./public
 
-    deploy:
+  deploy:
     needs: build-and-deploy
     runs-on: ubuntu-latest
     permissions:
