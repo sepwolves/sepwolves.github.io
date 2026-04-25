@@ -230,6 +230,8 @@
   },
   "active": "bfa4ae315eb08c33",
   "lastOpenFiles": [
+    "source/categories/index.md",
+    "source/categories",
     "source/_posts/20260423085503.md",
     "source/_posts/20260426060845.md",
     "source/_posts/Hexo-Blog-Setup-Report.md",
@@ -256,7 +258,6 @@
     "themes/keep/source/css/layout/_partial/post/post-tools.styl",
     "themes/keep/source/css/layout/_partial/post/post-share.styl",
     "themes/keep/source/css/layout/_partial/post/post-copyright-info.styl",
-    "themes/keep/source/css/layout/_partial/common/empty-content.styl",
     "themes/keep/source/images/brands/vercel.png",
     "themes/keep/source/images/brands/upyun.png",
     "themes/keep/source/images/brands/tencent_cloud.png",
@@ -274,7 +275,6 @@
     "node_modules/acorn/README.md",
     "node_modules/acorn/CHANGELOG.md",
     "node_modules/promise/Readme.md",
-    "node_modules/with/README.md",
-    "node_modules/babel-walk/README.md"
+    "node_modules/with/README.md"
   ]
 }

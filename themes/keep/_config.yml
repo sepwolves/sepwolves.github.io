@@ -37,7 +37,7 @@ menu:
   home: /                       # || fa-solid fa-home
   archives: /archives           # || fa-solid fa-box-archive
   # tags: /tags                 # || fa-solid fa-tags
-  # categories: /categories     # || fa-solid fa-layer-group
+  categories: /categories     # || fa-solid fa-layer-group
   # links: /links               # || fa-solid fa-link
   # photos: /photos             # || fa-solid fa-image
   # tools: /tools               # || fa-solid fa-tools
