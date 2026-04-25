@@ -3,20 +3,22 @@ name: Deploy Hexo
 on:
   push:
     branches:
-      - master # 监听博客主库的变动（请确认为 master 或 main）
+      - master # 监听博客主库的变动
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. 拉取博客引擎库
+      - name: 1. 拉取博客引擎库 (包含主题子模块)
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - name: 2. 抓取外部内容库
+      - name: 2. 抓取外部内容库 (小说/笔记)
         uses: actions/checkout@v4
         with:
           repository: sepwolves/FanYuanFuSong
-          ref: main  # 如果小说库是 main，请保持此处为 main
+          ref: main
           token: ${{ secrets.REPO_B_TOKEN }} 
           path: source/_posts/fan-yuan-fu-song 
 
@@ -27,7 +29,7 @@ jobs:
           cache: 'npm'
 
       - name: 4. 安装依赖
-        run: npm install && npm install hexo-renderer-stylus@2.1.0
+        run: npm install && npm install hexo-generator-searchdb
 
       - name: 5. 自动整理小说格式与排序
         run: |
@@ -66,7 +68,7 @@ jobs:
       - name: 6. 执行 Hexo 静态生成
         run: npx hexo generate
 
-      - name: 6. 上传产物并发布
+      - name: 7. 上传产物并发布
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
