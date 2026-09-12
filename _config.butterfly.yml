@@ -5,12 +5,19 @@ menu:
   #   Movie: /movies/ || fas fa-video
   小说集合: /novel-collection.html || fas fa-book
 
-# Disable cover page to go directly to blog
+# 自定义头像和网站图标（狼头）
+avatar:
+  img: /img/avatar-wolf.svg
+  effect: false
+
+favicon: /img/avatar-wolf.svg
+
+# 禁止封面大图，直接显示博客内容
 cover:
   index_enable: false
   aside_enable: false
   archives_enable: false
   default_cover:
 
-# Disable top banner images
+# 禁止顶部横幅图片
 disable_top_img: true
