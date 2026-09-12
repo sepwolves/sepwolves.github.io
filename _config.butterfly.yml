@@ -4,3 +4,13 @@ menu:
   #   Music: /music/ || fas fa-music
   #   Movie: /movies/ || fas fa-video
   小说集合: /novel-collection.html || fas fa-book
+
+# Disable cover page to go directly to blog
+cover:
+  index_enable: false
+  aside_enable: false
+  archives_enable: false
+  default_cover:
+
+# Disable top banner images
+disable_top_img: true
