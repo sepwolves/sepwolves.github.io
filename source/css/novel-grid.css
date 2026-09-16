@@ -1,0 +1,95 @@
+/* ==========================================================================
+   小说 / 反元复宋 分类页 —— 网格布局
+   只作用在 category-grid 布局的页面（正文容器 #novel-grid-wrap 存在时）
+   ========================================================================== */
+
+/* 该页面标题 */
+#novel-grid-wrap #novel-grid-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+/* 网格容器：自适应列数 */
+#novel-grid-wrap .novel-grid .recent-post-items {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0;
+}
+
+/* 单个卡片：清掉首页那套左右/上下的固定高度，改成紧凑方块 */
+#novel-grid-wrap .novel-grid .recent-post-item {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: var(--card-box-shadow);
+  transition: all 0.3s;
+}
+
+#novel-grid-wrap .novel-grid .recent-post-item:hover {
+  box-shadow: var(--card-hover-box-shadow);
+  transform: translateY(-4px);
+}
+
+/* 卡片内容区 */
+#novel-grid-wrap .novel-grid .recent-post-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 18px 14px;
+  min-height: 84px;
+  box-sizing: border-box;
+}
+
+/* 章节标题 */
+#novel-grid-wrap .novel-grid .recent-post-info .article-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--font-color);
+  word-break: break-word;
+}
+
+#novel-grid-wrap .novel-grid .recent-post-info .article-title:hover {
+  color: var(--theme-color);
+}
+
+/* 响应式：窄屏减少列数 */
+@media screen and (max-width: 1200px) {
+  #novel-grid-wrap .novel-grid .recent-post-items {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media screen and (max-width: 900px) {
+  #novel-grid-wrap .novel-grid .recent-post-items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  #novel-grid-wrap .novel-grid .recent-post-items {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  #novel-grid-wrap .novel-grid .recent-post-info {
+    min-height: 64px;
+    padding: 14px 12px;
+  }
+}
+
+/* 网格页面不需要右侧目录/侧边栏，占满整行 */
+#body-wrap.page #content-inner.layout:has(#novel-grid-wrap) {
+  max-width: 100%;
+}

@@ -31,3 +31,8 @@ aside:
       icon: fab fa-github
       text: Follow Me
       link: https://github.com/sepwolves
+
+# 自定义样式：小说分类页的网格布局（见 source/css/novel-grid.css）
+inject:
+  head:
+    - <link rel="stylesheet" href="/css/novel-grid.css">
