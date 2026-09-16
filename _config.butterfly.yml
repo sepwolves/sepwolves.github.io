@@ -21,3 +21,13 @@ cover:
 
 # 禁止顶部横幅图片
 disable_top_img: true
+
+# 侧边栏作者卡片 - Follow Me 按钮指向自己的 GitHub
+aside:
+  card_author:
+    enable: true
+    button:
+      enable: true
+      icon: fab fa-github
+      text: Follow Me
+      link: https://github.com/sepwolves
