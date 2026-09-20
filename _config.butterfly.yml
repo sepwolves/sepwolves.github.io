@@ -31,6 +31,16 @@ aside:
       icon: fab fa-github
       text: Follow Me
       link: https://github.com/sepwolves
+  card_post_series:
+    enable: true
+    series_title: true
+
+# 系列文章支持（用于小说章节侧边栏目录）
+series:
+  enable: true
+  orderBy: 'title'
+  order: 1
+
 
 # 自定义样式：小说分类页的网格布局（见 source/css/novel-grid.css）
 inject:

@@ -1,0 +1,35 @@
+if theme.aside.card_post_series.enable
+  - const isNovel = typeof isNovelPage === 'function' && isNovelPage(page)
+  - const seriesItems = isNovel ? (typeof getNovelChapters === 'function' ? getNovelChapters() : []) : (fragment_cache('seriesArr', groupPosts)[page.series] || [])
+  - const seriesTitle = isNovel ? '《反元复宋》目录' : (theme.aside.card_post_series.series_title ? page.series : _p('aside.card_post_series'))
+  .card-widget.card-post-series.card-novel-catalog
+    .item-headline
+      i.fas.fa-book-open
+      span= seriesTitle
+      span.novel-catalog-count= ' (' + seriesItems.length + '章)'
+    .novel-catalog-list#novel-catalog-list
+      each item in seriesItems
+        - const { path, title = _p('no_title') } = item
+        - let link = url_for(path)
+        - let isCurrent = (page.path === path || page.title === title)
+        a.novel-catalog-item(href=link title=title class=isCurrent ? 'is-current' : '')
+          span.novel-catalog-title= title
+          if isCurrent
+            span.novel-catalog-badge 在读
+    script.
+      (function() {
+        function scrollToCurrentChapter() {
+          var list = document.getElementById('novel-catalog-list');
+          if (!list) return;
+          var current = list.querySelector('.novel-catalog-item.is-current');
+          if (current) {
+            list.scrollTop = current.offsetTop - list.offsetTop - (list.clientHeight / 2) + (current.clientHeight / 2);
+          }
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', scrollToCurrentChapter);
+        } else {
+          scrollToCurrentChapter();
+        }
+        document.addEventListener('pjax:complete', scrollToCurrentChapter);
+      })();

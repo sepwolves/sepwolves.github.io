@@ -93,3 +93,103 @@
 #body-wrap.page #content-inner.layout:has(#novel-grid-wrap) {
   max-width: 100%;
 }
+
+/* ==========================================================================
+   小说章节侧边栏目录组件 (Novel Chapter Catalog Widget)
+   ========================================================================== */
+.card-widget.card-novel-catalog {
+  padding: 16px 14px;
+}
+
+.card-widget.card-novel-catalog .item-headline {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: bold;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--hr-border, #e3e8f7);
+  margin-bottom: 10px;
+}
+
+.card-widget.card-novel-catalog .item-headline i {
+  margin-right: 8px;
+  color: var(--theme-color, #49b1f5);
+}
+
+.card-widget.card-novel-catalog .novel-catalog-count {
+  font-size: 0.82rem;
+  font-weight: normal;
+  color: var(--text-muted, #858585);
+  margin-left: 4px;
+}
+
+/* 独立可滚动容器 */
+.card-widget.card-novel-catalog .novel-catalog-list {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* 现代浏览器滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-color, #49b1f5) transparent;
+}
+
+.card-widget.card-novel-catalog .novel-catalog-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.card-widget.card-novel-catalog .novel-catalog-list::-webkit-scrollbar-thumb {
+  background: var(--theme-color, #49b1f5);
+  border-radius: 4px;
+}
+
+/* 单个章节条目 */
+.card-widget.card-novel-catalog .novel-catalog-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--font-color, #363636);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  background: transparent;
+}
+
+.card-widget.card-novel-catalog .novel-catalog-item:hover {
+  background: var(--btn-hover-color, rgba(73, 177, 245, 0.12));
+  color: var(--theme-color, #49b1f5);
+  padding-left: 14px;
+}
+
+.card-widget.card-novel-catalog .novel-catalog-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 当前阅读章节高亮样式 */
+.card-widget.card-novel-catalog .novel-catalog-item.is-current {
+  background: var(--theme-color, #49b1f5) !important;
+  color: #ffffff !important;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(73, 177, 245, 0.4);
+}
+
+.card-widget.card-novel-catalog .novel-catalog-badge {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  margin-left: 6px;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+
