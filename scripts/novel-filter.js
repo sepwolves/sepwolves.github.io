@@ -6,17 +6,56 @@ const pagination = require('hexo-pagination');
 
 /**
  * 判定文章是否为小说章节：
- * 1. 物理路径位于 fan-yuan-fu-song 目录下
- * 2. 分类包含「反元复宋」或「小说」
+ * 1. 物理路径位于 novels/ 目录下或历史 fan-yuan-fu-song 目录
+ * 2. 分类包含「小说」或属于小说的子分类
+ * 3. 具有 type: novel 或 series 标记
  */
 function isNovelPost(post) {
   if (!post) return false;
-  if (post.source && post.source.includes('fan-yuan-fu-song')) return true;
+  if (post.type === 'novel') return true;
+  if (post.source) {
+    const s = post.source.replace(/\\/g, '/');
+    if (s.includes('novels/') || s.includes('fan-yuan-fu-song')) return true;
+  }
   if (post.categories && post.categories.length) {
     const cats = post.categories.toArray ? post.categories.toArray() : post.categories;
-    if (cats.some(c => c && (c.name === '反元复宋' || c.name === '小说'))) return true;
+    if (cats.some(c => c && (c.name === '小说' || (c.parent && typeof c.parent === 'object' && c.parent.name === '小说')))) {
+      return true;
+    }
   }
+  if (post.series && post.series.includes('目录')) return true;
   return false;
+}
+
+/**
+ * 从文章中解析具体的小说书名：
+ * 依次尝试：post.book -> series -> categories 中「小说」后面的子分类 -> source 路径 -> 默认小说
+ */
+function getBookName(post) {
+  if (!post) return '默认作品';
+  if (post.book) return post.book;
+  if (post.series) {
+    const m = post.series.match(/《(.*?)》/);
+    if (m) return m[1];
+  }
+  if (post.categories && post.categories.length) {
+    const cats = post.categories.toArray ? post.categories.toArray() : post.categories;
+    const catNames = cats.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
+    const novelIdx = catNames.indexOf('小说');
+    if (novelIdx !== -1 && novelIdx + 1 < catNames.length) {
+      return catNames[novelIdx + 1];
+    }
+    for (const name of catNames) {
+      if (name !== '小说') return name;
+    }
+  }
+  if (post.source) {
+    const s = post.source.replace(/\\/g, '/');
+    const m = s.match(/novels\/([^/]+)/);
+    if (m) return m[1];
+    if (s.includes('fan-yuan-fu-song')) return '反元复宋';
+  }
+  return '反元复宋';
 }
 
 /**
@@ -33,32 +72,42 @@ function extractChapterNumber(title) {
   return Number.MAX_SAFE_INTEGER;
 }
 
-// 缓存排好序的全部小说章节列表
-let cachedNovelChapters = [];
+// 缓存排好序的全部小说章节（按书名分桶）
+let cachedNovelChaptersByBook = {};
 
 // ==========================================
 // 1. 注册模板 Helper
 // ==========================================
 hexo.extend.helper.register('isNovelPage', function (page) {
-  return isNovelPost(page);
+  return isNovelPost(page || this.page);
 });
 
-hexo.extend.helper.register('getNovelChapters', function () {
-  if (cachedNovelChapters.length > 0) return cachedNovelChapters;
+hexo.extend.helper.register('getBookName', function (page) {
+  return getBookName(page || this.page);
+});
+
+hexo.extend.helper.register('getNovelChapters', function (page) {
+  const currentPost = page || this.page;
+  const bookName = getBookName(currentPost);
+  if (cachedNovelChaptersByBook[bookName] && cachedNovelChaptersByBook[bookName].length > 0) {
+    return cachedNovelChaptersByBook[bookName];
+  }
+
   const Post = hexo.model('Post');
-  const novels = Post.filter(p => isNovelPost(p)).toArray();
+  const novels = Post.filter(p => isNovelPost(p) && getBookName(p) === bookName).toArray();
   novels.sort((a, b) => {
     const na = extractChapterNumber(a.title);
     const nb = extractChapterNumber(b.title);
     if (na !== nb) return na - nb;
     return a.date - b.date;
   });
-  cachedNovelChapters = novels.map(p => ({
+  const chapters = novels.map(p => ({
     title: p.title,
     path: p.path,
     date: p.date ? p.date.valueOf() : 0
   }));
-  return cachedNovelChapters;
+  cachedNovelChaptersByBook[bookName] = chapters;
+  return chapters;
 });
 
 // ==========================================
@@ -191,11 +240,12 @@ hexo.extend.filter.register('template_locals', function (locals) {
 });
 
 // ==========================================
-// 5. 渲染过滤：确保小说页面注入 series 标识
+// 5. 渲染过滤：确保小说页面动态注入对应的 series 标识
 // ==========================================
 hexo.extend.filter.register('before_post_render', function (data) {
   if (isNovelPost(data)) {
-    data.series = '《反元复宋》目录';
+    const bookName = getBookName(data);
+    data.series = `《${bookName}》目录`;
   }
   return data;
 });
@@ -203,31 +253,43 @@ hexo.extend.filter.register('before_post_render', function (data) {
 // ==========================================
 // 6. before_generate 阶段：
 //    - 同步定制 Pug 组件
-//    - 初始化小说章节缓存与 hexo._seriesGroups
-//    - 劫持并增强 post 生成器（保持与 Butterfly random_cover 兼容）
+//    - 按小说书名分组初始化章节缓存与 hexo._seriesGroups
+//    - 劫持并增强 post 生成器：实现同部小说章节正序互联
 // ==========================================
 const SERIES_VIEW_SRC = path.join(hexo.base_dir, 'source', '_layouts', 'card_post_series.pug');
 
 hexo.extend.filter.register('before_generate', function () {
   const Post = hexo.model('Post');
-  const novels = Post.filter(p => isNovelPost(p)).toArray();
+  const allNovels = Post.filter(p => isNovelPost(p)).toArray();
 
-  novels.sort((a, b) => {
-    const na = extractChapterNumber(a.title);
-    const nb = extractChapterNumber(b.title);
-    if (na !== nb) return na - nb;
-    return a.date - b.date;
+  cachedNovelChaptersByBook = {};
+  hexo._seriesGroups = hexo._seriesGroups || {};
+
+  const novelsByBook = {};
+  allNovels.forEach(p => {
+    const bName = getBookName(p);
+    if (!novelsByBook[bName]) novelsByBook[bName] = [];
+    novelsByBook[bName].push(p);
   });
 
-  cachedNovelChapters = novels.map(p => ({
-    title: p.title,
-    path: p.path,
-    date: p.date ? p.date.valueOf() : 0
-  }));
+  Object.keys(novelsByBook).forEach(bName => {
+    const list = novelsByBook[bName];
+    list.sort((a, b) => {
+      const na = extractChapterNumber(a.title);
+      const nb = extractChapterNumber(b.title);
+      if (na !== nb) return na - nb;
+      return a.date - b.date;
+    });
 
-  // 注入 hexo._seriesGroups 供 Butterfly 内部系列功能使用
-  hexo._seriesGroups = hexo._seriesGroups || {};
-  hexo._seriesGroups['《反元复宋》目录'] = cachedNovelChapters;
+    const chapters = list.map(p => ({
+      title: p.title,
+      path: p.path,
+      date: p.date ? p.date.valueOf() : 0
+    }));
+
+    cachedNovelChaptersByBook[bName] = chapters;
+    hexo._seriesGroups[`《${bName}》目录`] = chapters;
+  });
 
   // 将定制的 card_post_series.pug 同步注入主题 widget 目录与 Hexo theme view 缓存
   if (fs.existsSync(SERIES_VIEW_SRC)) {
@@ -243,31 +305,24 @@ hexo.extend.filter.register('before_generate', function () {
     }
   }
 
-  // 劫持 post 生成器：在 Butterfly random_cover 处理完成后，
-  // 隔离普通文章与小说章节的上一篇/下一篇互联，并为小说章节绑定 series
+  // 劫持 post 生成器：按小说分组管理上一篇/下一篇跳转
   const origPostGen = hexo.extend.generator.get('post');
   if (origPostGen) {
     hexo.extend.generator.register('post', function (locals) {
       return Promise.resolve(origPostGen.call(this, locals)).then(posts => {
         const regular = [];
-        const novel = [];
+        const novelsByBookItems = {};
 
         for (let i = 0; i < posts.length; i++) {
           const item = posts[i];
           if (isNovelPost(item.data)) {
-            novel.push(item);
+            const bName = getBookName(item.data);
+            if (!novelsByBookItems[bName]) novelsByBookItems[bName] = [];
+            novelsByBookItems[bName].push(item);
           } else {
             regular.push(item);
           }
         }
-
-        // 小说章节严格按序号正序排序
-        novel.sort((a, b) => {
-          const na = extractChapterNumber(a.data.title);
-          const nb = extractChapterNumber(b.data.title);
-          if (na !== nb) return na - nb;
-          return a.data.date - b.data.date;
-        });
 
         // 普通博文按时间顺序相连
         for (let i = 0; i < regular.length; i++) {
@@ -275,12 +330,23 @@ hexo.extend.filter.register('before_generate', function () {
           regular[i].data.next = i < regular.length - 1 ? regular[i + 1].data : null;
         }
 
-        // 小说章节只在小说章节间按章节序号正序跳转 (配合 Butterfly 默认 post_pagination: 1)
-        for (let i = 0; i < novel.length; i++) {
-          novel[i].data.series = '《反元复宋》目录';
-          novel[i].data.next = i > 0 ? novel[i - 1].data : null;
-          novel[i].data.prev = i < novel.length - 1 ? novel[i + 1].data : null;
-        }
+        // 各部小说章节：只在同部小说的章节间按序号正序跳转
+        Object.keys(novelsByBookItems).forEach(bName => {
+          const bookPosts = novelsByBookItems[bName];
+          bookPosts.sort((a, b) => {
+            const na = extractChapterNumber(a.data.title);
+            const nb = extractChapterNumber(b.data.title);
+            if (na !== nb) return na - nb;
+            return a.data.date - b.data.date;
+          });
+
+          for (let i = 0; i < bookPosts.length; i++) {
+            bookPosts[i].data.series = `《${bName}》目录`;
+            // Butterfly post_pagination: 1 下，prev 取 next，next 取 prev
+            bookPosts[i].data.next = i > 0 ? bookPosts[i - 1].data : null;
+            bookPosts[i].data.prev = i < bookPosts.length - 1 ? bookPosts[i + 1].data : null;
+          }
+        });
 
         return posts;
       });
@@ -289,7 +355,7 @@ hexo.extend.filter.register('before_generate', function () {
 }, 100);
 
 // ==========================================
-// 7. 增强 groupPosts helper，保证章节目录严格按章节数字正序排列 (1 -> 100)
+// 7. 增强 groupPosts helper，保证章节目录严格按章节数字正序排列 (1 -> N)
 // ==========================================
 hexo.extend.helper.register('groupPosts', function () {
   const groups = hexo._seriesGroups || {};

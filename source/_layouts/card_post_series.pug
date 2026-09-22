@@ -1,7 +1,7 @@
 if theme.aside.card_post_series.enable
   - const isNovel = typeof isNovelPage === 'function' && isNovelPage(page)
-  - const seriesItems = isNovel ? (typeof getNovelChapters === 'function' ? getNovelChapters() : []) : (fragment_cache('seriesArr', groupPosts)[page.series] || [])
-  - const seriesTitle = isNovel ? '《反元复宋》目录' : (theme.aside.card_post_series.series_title ? page.series : _p('aside.card_post_series'))
+  - const seriesItems = isNovel ? (typeof getNovelChapters === 'function' ? getNovelChapters(page) : []) : (fragment_cache('seriesArr', groupPosts)[page.series] || [])
+  - const seriesTitle = isNovel ? (page.series || ('《' + (typeof getBookName === 'function' ? getBookName(page) : '小说') + '》目录')) : (theme.aside.card_post_series.series_title ? page.series : _p('aside.card_post_series'))
   .card-widget.card-post-series.card-novel-catalog
     .item-headline
       i.fas.fa-book-open
