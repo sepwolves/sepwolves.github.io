@@ -46,3 +46,29 @@ series:
 inject:
   head:
     - <link rel="stylesheet" href="/css/novel-grid.css">
+
+# 评论系统
+comments:
+  use: Waline
+  text: true
+  lazyload: false
+  count: true
+  card_post_count: false
+
+# 统计配置（关闭不蒜子页面阅读量，使用 Waline 阅读量统计）
+busuanzi:
+  page_pv: false
+
+# Waline 评论与互动配置
+waline:
+  serverURL: 'https://140.245.65.111.sslip.io'
+  pageview: true
+  option:
+    reaction: true
+    emoji:
+      - https://unpkg.com/@waline/emojis@1.2.0/bilibili
+      - https://unpkg.com/@waline/emojis@1.2.0/weibo
+      - https://unpkg.com/@waline/emojis@1.2.0/qq
+    requiredMeta:
+      - nick
+
