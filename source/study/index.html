@@ -10,9 +10,10 @@ top_img: false
 
 {% raw %}
 <div class="study-app-wrapper">
-  <!-- 引入依赖：Vue 3 与 Confetti 烟花特效 -->
+  <!-- 引入依赖：Vue 3、Confetti 烟花特效 与 JSZip 电子书解包引擎 -->
   <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="/js/study-app.js"></script>
 
   <div id="smart-study-mount" class="study-app" v-cloak>
@@ -843,24 +844,49 @@ top_img: false
           <!-- 上传本地文件 -->
           <div>
             <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
-              选择电子书文件 (.txt / .md)：
+              选择电子书文件（支持 .epub / .txt / .md）：
             </label>
             <input
               type="file"
-              accept=".txt,.md,.markdown"
+              accept=".epub,.txt,.md,.markdown"
               @change="handleFileUpload"
-              style="font-size: 0.85rem;"
+              style="font-size: 0.85rem; width: 100%; box-sizing: border-box; padding: 0.4rem; border: 1px dashed var(--study-border); border-radius: 6px; background: var(--study-bg);"
             />
+            <div style="font-size: 0.76rem; color: var(--study-text-muted); margin-top: 0.35rem; line-height: 1.5;">
+              ✨ <strong>推荐上传 .epub 格式</strong>：纯前端极速解包，精准提取原生书名、作者与目录章节！<br>
+              📄 <strong>.txt 文本</strong>：自动识别 GBK / UTF-8 编码并过滤杂乱头信息，杜绝乱码。
+            </div>
+          </div>
+
+          <!-- 解析状态与章节预览 -->
+          <div v-if="isParsingFile" style="padding: 0.75rem 1rem; background: var(--study-primary-light); border-radius: 6px; font-size: 0.82rem; color: var(--study-primary); display: flex; align-items: center; gap: 0.6rem;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>{{ parsingStatusText || '正在解析电子书结构...' }}</span>
+          </div>
+
+          <div v-else-if="importForm.parsedChapters && importForm.parsedChapters.length" style="padding: 0.75rem 1rem; background: var(--study-success-light); border: 1px solid var(--study-success); border-radius: 6px; font-size: 0.82rem;">
+            <div style="font-weight: 700; color: var(--study-success); margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center;">
+              <span><i class="fas fa-check-circle"></i> 成功识别出 {{ importForm.parsedChapters.length }} 个章节</span>
+              <span style="font-weight: normal; font-size: 0.75rem; color: var(--study-text-muted);">点击下方按钮即可一键导入</span>
+            </div>
+            <div style="max-height: 110px; overflow-y: auto; color: var(--study-text); padding-left: 0.2rem; font-size: 0.8rem; line-height: 1.6;">
+              <div v-for="(ch, cIdx) in importForm.parsedChapters.slice(0, 8)" :key="cIdx" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ cIdx + 1 }}. {{ ch.title }} <span style="color: var(--study-text-muted); font-size: 0.74rem;">(约 {{ ch.content.length }} 字)</span>
+              </div>
+              <div v-if="importForm.parsedChapters.length > 8" style="color: var(--study-text-muted); font-size: 0.75rem; margin-top: 2px;">
+                ... 等共 {{ importForm.parsedChapters.length }} 个章节
+              </div>
+            </div>
           </div>
 
           <!-- 或直接粘贴文本 -->
           <div>
             <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
-              或者直接在此粘贴书籍长文（支持智能正则自动分章）：
+              或者在此查看/粘贴书籍文本（支持智能正则自动分章）：
             </label>
             <textarea
               v-model="importForm.rawText"
-              rows="6"
+              rows="5"
               placeholder="在此粘贴书籍全本或数个章节内容，系统将自动识别【第X章】、【Chapter X】或【# 标题】进行章节拆解并生成学习材料和考核题..."
               style="width: 100%; box-sizing: border-box; padding: 0.6rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.85rem;"
             ></textarea>
@@ -1260,11 +1286,14 @@ function initSmartStudy() {
         devMode: savedConfig.devMode,
         aiConfig: savedConfig.aiConfig,
 
-        // 导入表单
+        // 导入表单与解析状态
+        isParsingFile: false,
+        parsingStatusText: '',
         importForm: {
           title: '',
           author: '',
-          rawText: ''
+          rawText: '',
+          parsedChapters: null
         },
         isAIGenerating: false
       };
@@ -1665,45 +1694,320 @@ function initSmartStudy() {
         dlAnchor.setAttribute('download', 'smart-study-progress.json');
         dlAnchor.click();
       },
-      // 文件导入与智能分章
-      handleFileUpload(e) {
+      // 文件导入与智能分章引擎 (支持 EPUB 解包、TXT 自适应编码 GBK/UTF-8 及智能去乱码)
+      async handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
+
+        const fileName = file.name;
+        const ext = fileName.slice((fileName.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+
+        // 默认预设书名
         if (!this.importForm.title) {
-          this.importForm.title = file.name.replace(/\.[^/.]+$/, '');
-        }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          this.importForm.rawText = event.target.result;
-        };
-        reader.readAsText(file);
-      },
-      confirmImportBook() {
-        const title = this.importForm.title.trim();
-        const text = this.importForm.rawText.trim();
-        if (!title || !text) {
-          alert('请填写书名并提供书籍文本内容！');
-          return;
+          this.importForm.title = fileName.replace(/\.[^/.]+$/, '');
         }
 
-        // 智能正则切分章节：匹配常见中英文章节格式
-        // 比如：第1章、第一章、Chapter 1、# 标题等
+        this.isParsingFile = true;
+        this.parsingStatusText = `正在读取并分析文件: ${fileName}...`;
+        this.importForm.parsedChapters = null;
+
+        try {
+          if (ext === 'epub') {
+            this.parsingStatusText = '正在解压 EPUB 电子书并提取原生目录与全文章节...';
+            const epubData = await this.parseEpub(file);
+            if (epubData.title) {
+              this.importForm.title = epubData.title;
+            }
+            if (epubData.author) {
+              this.importForm.author = epubData.author;
+            }
+            this.importForm.parsedChapters = epubData.chapters;
+            this.importForm.rawText = epubData.chapters.map(c => `# ${c.title}\n\n${c.content}`).join('\n\n');
+            this.parsingStatusText = `✅ 解析成功！共提取到 ${epubData.chapters.length} 个章节`;
+          } else {
+            // TXT / MD 文件：带编码自适应探测（自动兼容 UTF-8 与 GBK/GB2312）
+            this.parsingStatusText = '正在以自适应编码读取文本...';
+            const text = await this.readTextFileWithEncoding(file);
+            this.importForm.rawText = text;
+
+            // 预解析分章预览（自动过滤开头乱码/密文头）
+            const chapters = this.splitTextIntoChapters(text);
+            this.importForm.parsedChapters = chapters;
+            this.parsingStatusText = `✅ 读取成功！预分章提取到 ${chapters.length} 个章节`;
+          }
+        } catch (err) {
+          console.error('文件解析失败', err);
+          alert('解析文件出错：' + err.message + '\n请确认文件是否完整或未加密。');
+          this.parsingStatusText = '❌ 解析失败：' + err.message;
+        } finally {
+          this.isParsingFile = false;
+        }
+      },
+      readTextFileWithEncoding(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const buffer = e.target.result;
+            let text = '';
+            // 优先尝试严格 UTF-8 解码
+            try {
+              const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+              text = utf8Decoder.decode(buffer);
+            } catch (err) {
+              // 若出现非法字节序列，自动回退到 GBK 解码（兼容绝大部分国内老 TXT/小说）
+              try {
+                const gbkDecoder = new TextDecoder('gbk', { fatal: false });
+                text = gbkDecoder.decode(buffer);
+              } catch (err2) {
+                const fallbackDecoder = new TextDecoder('utf-8', { fatal: false });
+                text = fallbackDecoder.decode(buffer);
+              }
+            }
+            resolve(text);
+          };
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+      },
+      // 智能判断一行文本是否为无语义的 Base64/哈希密文乱码行
+      isGibberish(str) {
+        if (!str) return true;
+        const trimmed = str.trim();
+        // 长度大于等于 12，且由无空格的字母数字与特殊符号组成，并且不包含任何中文字符
+        if (trimmed.length >= 12 && /^[\w+/=.-]+$/.test(trimmed) && !/[\u4e00-\u9fa5]/.test(trimmed)) {
+          return true;
+        }
+        return false;
+      },
+      splitTextIntoChapters(text) {
         const chapterRegex = /(?:^|\n)(?=(?:第\s*[0-9一二三四五六七八九十百千]+\s*[章节回篇卷]|Chapter\s+[0-9]+|#+\s+))/i;
         let parts = text.split(chapterRegex).map(p => p.trim()).filter(Boolean);
-
         if (parts.length === 0) {
           parts = [text];
         }
 
-        // 生成章节数据
-        const generatedChapters = parts.map((chunk, idx) => {
-          // 提取第一行作为章节标题
+        return parts.map((chunk, idx) => {
           const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
-          const chTitle = lines[0] ? lines[0].replace(/^#+\s*/, '') : `第 ${idx + 1} 节`;
-          const content = lines.slice(1).join('\n') || chunk;
+          let chTitle = '';
+          let contentLines = lines;
 
-          // 使用本地启发式分析引擎自动生成学习材料与考核试卷
-          return this.generateMaterialsLocally(chTitle, content, idx);
+          // 智能寻找第一个有意义的非乱码行作为标题
+          for (let li = 0; li < Math.min(lines.length, 5); li++) {
+            if (!this.isGibberish(lines[li])) {
+              chTitle = lines[li].replace(/^#+\s*/, '');
+              contentLines = lines.slice(li + 1);
+              break;
+            }
+          }
+
+          if (!chTitle) {
+            chTitle = `第 ${idx + 1} 节`;
+          }
+
+          const content = contentLines.join('\n') || chunk;
+          return {
+            title: chTitle,
+            content: content
+          };
+        });
+      },
+      async parseEpub(file) {
+        if (typeof JSZip === 'undefined') {
+          throw new Error('JSZip 依赖库尚未就绪，请检查网络或刷新页面');
+        }
+        const zip = await JSZip.loadAsync(file);
+
+        // 1. 读取 META-INF/container.xml 确定 rootfile OPF 路径
+        const containerFile = zip.file('META-INF/container.xml');
+        if (!containerFile) {
+          throw new Error('未找到 META-INF/container.xml，文件可能已损坏');
+        }
+        const containerXml = await containerFile.async('text');
+        const parser = new DOMParser();
+        const containerDoc = parser.parseFromString(containerXml, 'application/xml');
+        const rootfileEl = containerDoc.querySelector('rootfile');
+        if (!rootfileEl) {
+          throw new Error('无效的 EPUB container.xml');
+        }
+        const opfPath = rootfileEl.getAttribute('full-path');
+        const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+        // 2. 读取 OPF
+        const opfFile = zip.file(opfPath);
+        if (!opfFile) {
+          throw new Error('未找到 OPF 文件: ' + opfPath);
+        }
+        const opfXml = await opfFile.async('text');
+        const opfDoc = parser.parseFromString(opfXml, 'application/xml');
+
+        // 提取元数据
+        const titleEl = opfDoc.querySelector('title, dc\\:title');
+        const authorEl = opfDoc.querySelector('creator, dc\\:creator');
+        const descEl = opfDoc.querySelector('description, dc\\:description');
+        const title = titleEl ? titleEl.textContent.trim() : '';
+        const author = authorEl ? authorEl.textContent.trim() : '';
+        const description = descEl ? descEl.textContent.trim() : '';
+
+        // 3. 构建 manifest 映射 (id -> href)
+        const manifestItems = opfDoc.querySelectorAll('manifest > item');
+        const manifestMap = {};
+        let ncxHref = '';
+        manifestItems.forEach(item => {
+          const id = item.getAttribute('id');
+          const href = item.getAttribute('href');
+          const mediaType = item.getAttribute('media-type');
+          manifestMap[id] = href;
+          if (mediaType === 'application/x-dtbncx+xml' || (href && href.endsWith('.ncx'))) {
+            ncxHref = href;
+          }
+        });
+
+        // 4. 解析目录 TOC (如有 toc.ncx)
+        const tocMap = {};
+        if (ncxHref) {
+          try {
+            const ncxPath = this.resolveEpubPath(opfDir, ncxHref);
+            const ncxFile = zip.file(ncxPath);
+            if (ncxFile) {
+              const ncxXml = await ncxFile.async('text');
+              const ncxDoc = parser.parseFromString(ncxXml, 'application/xml');
+              const navPoints = ncxDoc.querySelectorAll('navPoint');
+              navPoints.forEach(np => {
+                const textEl = np.querySelector('navLabel > text');
+                const contentEl = np.querySelector('content');
+                if (textEl && contentEl) {
+                  const label = textEl.textContent.trim();
+                  let src = contentEl.getAttribute('src');
+                  if (src) {
+                    src = src.split('#')[0];
+                    if (!tocMap[src]) {
+                      tocMap[src] = label;
+                    }
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('NCX 目录解析跳过', e);
+          }
+        }
+
+        // 5. 按 spine 顺序提取每个章节正文
+        const spineItems = opfDoc.querySelectorAll('spine > itemref');
+        const chapters = [];
+
+        for (let i = 0; i < spineItems.length; i++) {
+          const idref = spineItems[i].getAttribute('idref');
+          const href = manifestMap[idref];
+          if (!href) continue;
+
+          const chapterPath = this.resolveEpubPath(opfDir, href);
+          const chapterFile = zip.file(chapterPath);
+          if (!chapterFile) continue;
+
+          const htmlStr = await chapterFile.async('text');
+          const doc = parser.parseFromString(htmlStr, 'text/html');
+
+          // 提取章节标题：优先 TOC，其次 h1/h2/h3，最后 title
+          let chTitle = '';
+          const hrefFilename = href.includes('/') ? href.substring(href.lastIndexOf('/') + 1) : href;
+          if (tocMap[href] || tocMap[hrefFilename]) {
+            chTitle = tocMap[href] || tocMap[hrefFilename];
+          } else {
+            const heading = doc.querySelector('h1, h2, h3, .title, .chapter-title');
+            if (heading && heading.textContent.trim()) {
+              chTitle = heading.textContent.trim();
+            } else {
+              const docTitle = doc.querySelector('title');
+              if (docTitle && docTitle.textContent.trim() && !docTitle.textContent.includes('.xhtml')) {
+                chTitle = docTitle.textContent.trim();
+              }
+            }
+          }
+
+          // 提取正文文本：保留段落结构，移除无用脚本与样式
+          const scripts = doc.querySelectorAll('script, style, link');
+          scripts.forEach(s => s.remove());
+
+          const paragraphs = [];
+          const pElements = doc.querySelectorAll('p, blockquote, div, h1, h2, h3, h4, li');
+          if (pElements.length > 0) {
+            pElements.forEach(p => {
+              const txt = p.textContent.trim();
+              if (txt && !paragraphs.includes(txt)) {
+                paragraphs.push(txt);
+              }
+            });
+          }
+          let cleanText = paragraphs.length > 0 ? paragraphs.join('\n\n') : (doc.body ? doc.body.textContent.trim() : '');
+          cleanText = cleanText.replace(/\n{3,}/g, '\n\n').trim();
+
+          // 过滤纯图片封面或过短空白页
+          if (cleanText.length < 20 && !chTitle) {
+            continue;
+          }
+
+          if (!chTitle) {
+            const firstLine = cleanText.split('\n')[0].trim();
+            chTitle = firstLine ? firstLine.slice(0, 30) : `第 ${chapters.length + 1} 节`;
+          }
+
+          chapters.push({
+            title: chTitle,
+            content: cleanText
+          });
+        }
+
+        return {
+          title: title || file.name.replace(/\.epub$/i, ''),
+          author: author || '自选读本',
+          description,
+          chapters: chapters.length > 0 ? chapters : [{ title: '全文内容', content: '未能自动解析出多章节，已整合为单章' }]
+        };
+      },
+      resolveEpubPath(baseDir, relativePath) {
+        if (!baseDir) return relativePath;
+        const parts = (baseDir + relativePath).split('/');
+        const resolved = [];
+        for (const p of parts) {
+          if (p === '..') {
+            resolved.pop();
+          } else if (p && p !== '.') {
+            resolved.push(p);
+          }
+        }
+        return resolved.join('/');
+      },
+      confirmImportBook() {
+        const title = this.importForm.title.trim();
+        let chaptersToImport = [];
+
+        if (this.importForm.parsedChapters && this.importForm.parsedChapters.length) {
+          // 如果有结构化解析好的章节（EPUB 或已分章的 TXT）
+          chaptersToImport = this.importForm.parsedChapters;
+        } else {
+          // 回退手动粘贴长文切分
+          const text = this.importForm.rawText.trim();
+          if (!text) {
+            alert('请提供书籍文本内容或上传电子书文件！');
+            return;
+          }
+          chaptersToImport = this.splitTextIntoChapters(text);
+        }
+
+        if (!title) {
+          alert('请填写书籍名称！');
+          return;
+        }
+
+        if (chaptersToImport.length === 0) {
+          alert('未能识别到有效的章节内容，请检查文件！');
+          return;
+        }
+
+        // 生成章节数据与本地学习/考核材料
+        const generatedChapters = chaptersToImport.map((ch, idx) => {
+          return this.generateMaterialsLocally(ch.title, ch.content, idx);
         });
 
         // 默认第一章解锁，后续章节锁定
@@ -1724,8 +2028,8 @@ function initSmartStudy() {
         this.currentBookId = newBook.id;
         this.saveToStorage();
         this.showImportModal = false;
-        this.importForm = { title: '', author: '', rawText: '' };
-        alert(`恭喜！《${newBook.title}》已成功导入并智能切分为 ${generatedChapters.length} 个章节！`);
+        this.importForm = { title: '', author: '', rawText: '', parsedChapters: null };
+        alert(`🎉 恭喜！《${newBook.title}》已成功导入并精准收录 ${generatedChapters.length} 个章节！`);
         this.switchBook(newBook.id);
       },
       // 本地智能启发式材料与多题型试卷生成引擎
