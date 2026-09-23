@@ -1,0 +1,1072 @@
+/* ==========================================================================
+   智学伴读 (SmartBook Mastery) - 现代化沉浸式学习工作台样式
+   ========================================================================== */
+
+:root {
+  --study-primary: #4f46e5;
+  --study-primary-rgb: 79, 70, 229;
+  --study-primary-hover: #4338ca;
+  --study-primary-light: #eef2ff;
+  --study-success: #10b981;
+  --study-success-light: #ecfdf5;
+  --study-warning: #f59e0b;
+  --study-warning-light: #fffbeb;
+  --study-danger: #ef4444;
+  --study-danger-light: #fef2f2;
+  --study-bg: #f8fafc;
+  --study-card-bg: #ffffff;
+  --study-border: #e2e8f0;
+  --study-text: #1e293b;
+  --study-text-muted: #64748b;
+  --study-radius-sm: 8px;
+  --study-radius-md: 12px;
+  --study-radius-lg: 18px;
+  --study-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --study-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --study-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --study-shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+}
+
+[data-theme="dark"] {
+  --study-primary: #6366f1;
+  --study-primary-rgb: 99, 102, 241;
+  --study-primary-hover: #818cf8;
+  --study-primary-light: rgba(99, 102, 241, 0.15);
+  --study-success: #34d399;
+  --study-success-light: rgba(52, 211, 153, 0.15);
+  --study-warning: #fbbf24;
+  --study-warning-light: rgba(251, 191, 36, 0.15);
+  --study-danger: #f87171;
+  --study-danger-light: rgba(248, 113, 113, 0.15);
+  --study-bg: #0f172a;
+  --study-card-bg: #1e293b;
+  --study-border: #334155;
+  --study-text: #f1f5f9;
+  --study-text-muted: #94a3b8;
+  --study-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --study-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.35);
+  --study-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+  --study-shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5);
+}
+
+/* Butterfly 主题页面嵌入全宽适配 */
+#article-container .study-app-wrapper {
+  margin: -1.5rem -1.5rem 0 -1.5rem;
+}
+@media (min-width: 768px) {
+  #article-container .study-app-wrapper {
+    margin: -2rem -2.5rem 0 -2.5rem;
+  }
+}
+
+/* 主容器 */
+.study-app {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  color: var(--study-text);
+  background: var(--study-bg);
+  min-height: calc(100vh - 180px);
+  border-radius: var(--study-radius-lg);
+  padding: 1.25rem;
+  box-sizing: border-box;
+}
+
+/* 顶部导航控制条 */
+.study-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-sm);
+  margin-bottom: 1.25rem;
+}
+
+.study-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.study-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--study-primary), #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 12px rgba(var(--study-primary-rgb), 0.35);
+}
+
+.study-brand-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--study-primary), #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+}
+
+.study-brand-subtitle {
+  font-size: 0.82rem;
+  color: var(--study-text-muted);
+  margin-top: 2px;
+}
+
+.study-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* 通用按钮 */
+.study-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: var(--study-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--study-card-bg);
+  color: var(--study-text);
+  box-shadow: var(--study-shadow-sm);
+  text-decoration: none !important;
+}
+
+.study-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--study-shadow-md);
+}
+
+.study-btn:active {
+  transform: translateY(0);
+}
+
+.study-btn-primary {
+  background: var(--study-primary);
+  color: #ffffff !important;
+  border-color: var(--study-primary);
+}
+.study-btn-primary:hover {
+  background: var(--study-primary-hover);
+}
+
+.study-btn-success {
+  background: var(--study-success);
+  color: #ffffff !important;
+  border-color: var(--study-success);
+}
+
+.study-btn-outline {
+  border-color: var(--study-border);
+  background: transparent;
+}
+.study-btn-outline:hover {
+  border-color: var(--study-primary);
+  color: var(--study-primary);
+}
+
+.study-btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+/* 主布局：左侧章节树，右侧学习与考核工作区 */
+.study-workspace {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 992px) {
+  .study-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 左侧栏：书籍信息与章节解锁树 */
+.study-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.study-card {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-sm);
+  padding: 1.25rem;
+  transition: box-shadow 0.2s;
+}
+
+.study-card:hover {
+  box-shadow: var(--study-shadow-md);
+}
+
+/* 当前书籍卡片 */
+.book-info-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.book-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--study-primary-light);
+  color: var(--study-primary);
+  margin-bottom: 0.6rem;
+}
+
+.book-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: var(--study-text);
+  line-height: 1.35;
+}
+
+.book-author {
+  font-size: 0.82rem;
+  color: var(--study-text-muted);
+  margin-bottom: 0.8rem;
+}
+
+.book-desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--study-text-muted);
+  margin-bottom: 1rem;
+}
+
+.book-progress-box {
+  background: var(--study-bg);
+  padding: 0.75rem;
+  border-radius: var(--study-radius-sm);
+  border: 1px solid var(--study-border);
+}
+
+.book-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.book-progress-bar-bg {
+  height: 8px;
+  background: var(--study-border);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.book-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--study-primary), var(--study-success));
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* 章节树列表 */
+.chapter-list-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+  color: var(--study-text);
+}
+
+.chapter-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--study-radius-sm);
+  border: 1px solid var(--study-border);
+  background: var(--study-card-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.chapter-item:hover:not(.locked) {
+  border-color: var(--study-primary);
+  background: var(--study-primary-light);
+  transform: translateX(3px);
+}
+
+.chapter-item.active {
+  border-color: var(--study-primary);
+  background: var(--study-primary-light);
+  box-shadow: 0 0 0 2px rgba(var(--study-primary-rgb), 0.2);
+}
+
+.chapter-item.locked {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background: var(--study-bg);
+}
+
+.chapter-status-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.status-passed {
+  background: var(--study-success-light);
+  color: var(--study-success);
+  border: 1px solid var(--study-success);
+}
+
+.status-unlocked {
+  background: var(--study-primary-light);
+  color: var(--study-primary);
+  border: 1px solid var(--study-primary);
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(var(--study-primary-rgb), 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(var(--study-primary-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--study-primary-rgb), 0); }
+}
+
+.status-locked {
+  background: var(--study-bg);
+  color: var(--study-text-muted);
+  border: 1px solid var(--study-border);
+}
+
+.chapter-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--study-text);
+}
+
+.chapter-meta {
+  font-size: 0.74rem;
+  color: var(--study-text-muted);
+  margin-top: 2px;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* 右侧核心内容区 */
+.study-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* 章节头部与专注学习计时条 */
+.chapter-hero {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.chapter-title-group h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: var(--study-text);
+}
+
+.chapter-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: var(--study-bg);
+  color: var(--study-text-muted);
+  border: 1px solid var(--study-border);
+}
+
+/* 专注计时器模块 */
+.focus-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--study-bg);
+  padding: 0.6rem 1rem;
+  border-radius: var(--study-radius-sm);
+  border: 1px solid var(--study-border);
+}
+
+.timer-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.timer-digits {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--study-primary);
+}
+
+.timer-label {
+  font-size: 0.75rem;
+  color: var(--study-text-muted);
+}
+
+/* 模式切换 (研读材料 / 考核闯关) */
+.view-mode-tabs {
+  display: flex;
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  padding: 0.35rem;
+  gap: 0.35rem;
+}
+
+.mode-tab-btn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--study-radius-sm);
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--study-text-muted);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.mode-tab-btn.active {
+  background: var(--study-primary);
+  color: #ffffff;
+  box-shadow: var(--study-shadow-sm);
+}
+
+.mode-tab-btn .badge-pill {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* 材料子导航 Tab */
+.materials-nav {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--study-border);
+  margin-bottom: 1.25rem;
+}
+
+.material-tab {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--study-text-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.material-tab:hover {
+  color: var(--study-primary);
+}
+
+.material-tab.active {
+  color: var(--study-primary);
+  border-bottom-color: var(--study-primary);
+}
+
+/* 材料内容卡片 */
+.material-content-card {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-sm);
+  padding: 1.5rem;
+  min-height: 400px;
+}
+
+/* 核心要点视图 */
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.concept-item {
+  background: var(--study-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  padding: 1rem;
+  border-left: 4px solid var(--study-primary);
+  transition: transform 0.2s;
+}
+
+.concept-item:hover {
+  transform: translateY(-2px);
+}
+
+.concept-item-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem 0;
+  color: var(--study-primary);
+}
+
+.concept-item-body {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--study-text);
+  margin: 0;
+}
+
+.quote-highlight {
+  margin: 1.2rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid #a855f7;
+  background: var(--study-primary-light);
+  border-radius: 0 var(--study-radius-sm) var(--study-radius-sm) 0;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--study-text);
+}
+
+/* 费曼白话导读 */
+.feynman-box {
+  line-height: 1.8;
+  font-size: 0.95rem;
+  color: var(--study-text);
+}
+.feynman-box p {
+  margin-bottom: 1rem;
+}
+.feynman-box .analogy-card {
+  background: var(--study-warning-light);
+  border: 1px solid var(--study-warning);
+  border-radius: var(--study-radius-sm);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+/* 3D 抽认闪卡 (Interactive Flashcards) */
+.flashcards-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.flashcard-stage {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 580px;
+  height: 290px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--study-shadow-lg);
+  border-radius: var(--study-radius-lg);
+}
+
+.flashcard-stage.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: var(--study-radius-lg);
+  padding: 1.75rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--study-border);
+}
+
+.flashcard-front {
+  background: linear-gradient(135deg, var(--study-card-bg) 60%, var(--study-primary-light));
+  color: var(--study-text);
+}
+
+.flashcard-back {
+  background: linear-gradient(135deg, var(--study-card-bg) 60%, var(--study-success-light));
+  color: var(--study-text);
+  transform: rotateY(180deg);
+}
+
+.flashcard-tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(var(--study-primary-rgb), 0.1);
+  color: var(--study-primary);
+  width: fit-content;
+  font-weight: 600;
+}
+
+.flashcard-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  margin: auto 0;
+}
+
+.flashcard-hint {
+  font-size: 0.78rem;
+  color: var(--study-text-muted);
+  text-align: center;
+}
+
+.flashcard-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 结构思维脑图大纲 */
+.mindmap-tree {
+  padding-left: 0.5rem;
+}
+.mindmap-node {
+  margin: 0.8rem 0;
+  position: relative;
+}
+.mindmap-node-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: var(--study-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--study-text);
+}
+.mindmap-node-title.primary {
+  background: var(--study-primary-light);
+  border-color: var(--study-primary);
+  color: var(--study-primary);
+}
+.mindmap-children {
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  border-left: 2px dashed var(--study-border);
+}
+
+/* 实战落地行动清单 */
+.actionable-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--study-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  margin-bottom: 0.75rem;
+}
+.action-check-icon {
+  color: var(--study-success);
+  font-size: 1.1rem;
+  margin-top: 2px;
+}
+.action-body strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--study-text);
+  margin-bottom: 0.2rem;
+}
+.action-body span {
+  font-size: 0.84rem;
+  color: var(--study-text-muted);
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   考核测试题模块 (Assessment & Quiz)
+   ========================================================================== */
+.quiz-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.quiz-header-banner {
+  background: linear-gradient(135deg, var(--study-card-bg), var(--study-primary-light));
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.quiz-info-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: var(--study-text);
+}
+
+.quiz-info-desc {
+  font-size: 0.82rem;
+  color: var(--study-text-muted);
+}
+
+.quiz-nav-dots {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.quiz-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--study-border);
+  background: var(--study-card-bg);
+  color: var(--study-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quiz-dot.active {
+  border-color: var(--study-primary);
+  background: var(--study-primary);
+  color: #fff;
+}
+
+.quiz-dot.answered {
+  border-color: var(--study-success);
+  color: var(--study-success);
+  background: var(--study-success-light);
+}
+
+/* 题目卡片 */
+.question-card {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--study-shadow-sm);
+}
+
+.question-type-pill {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--study-primary-light);
+  color: var(--study-primary);
+  margin-bottom: 0.8rem;
+}
+
+.question-text {
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  color: var(--study-text);
+}
+
+/* 选项列表 */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--study-radius-sm);
+  border: 1.5px solid var(--study-border);
+  background: var(--study-bg);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.option-item:hover {
+  border-color: var(--study-primary);
+  background: var(--study-primary-light);
+  transform: translateX(2px);
+}
+
+.option-item.selected {
+  border-color: var(--study-primary);
+  background: var(--study-primary-light);
+  box-shadow: 0 0 0 2px rgba(var(--study-primary-rgb), 0.25);
+}
+
+.option-label {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: var(--study-text);
+}
+
+.option-item.selected .option-label {
+  background: var(--study-primary);
+  color: white;
+  border-color: var(--study-primary);
+}
+
+.option-text {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--study-text);
+  flex: 1;
+}
+
+/* 填空与问答题输入框 */
+.quiz-input-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  border-radius: var(--study-radius-sm);
+  border: 1.5px solid var(--study-border);
+  background: var(--study-bg);
+  color: var(--study-text);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 90px;
+  margin-bottom: 1.25rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.quiz-input-textarea:focus {
+  border-color: var(--study-primary);
+}
+
+/* 结果与判卷卡片 */
+.result-card {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border-radius: var(--study-radius-md);
+  border: 1px solid var(--study-border);
+  background: var(--study-card-bg);
+  box-shadow: var(--study-shadow-md);
+}
+
+.result-badge-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 1.2rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+}
+
+.result-badge-passed {
+  background: var(--study-success-light);
+  color: var(--study-success);
+  border: 2px solid var(--study-success);
+}
+
+.result-badge-failed {
+  background: var(--study-danger-light);
+  color: var(--study-danger);
+  border: 2px solid var(--study-danger);
+}
+
+.result-score-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  color: var(--study-text);
+}
+
+.result-score-subtitle {
+  font-size: 0.95rem;
+  color: var(--study-text-muted);
+  max-width: 480px;
+  margin: 0 auto 1.5rem auto;
+  line-height: 1.6;
+}
+
+/* 错题解析列表 */
+.review-analysis {
+  text-align: left;
+  margin-top: 2rem;
+  border-top: 1px solid var(--study-border);
+  padding-top: 1.5rem;
+}
+
+.review-item {
+  background: var(--study-bg);
+  border-radius: var(--study-radius-sm);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--study-border);
+}
+
+.review-item.wrong {
+  border-left-color: var(--study-danger);
+}
+
+.review-item.correct {
+  border-left-color: var(--study-success);
+}
+
+.review-q-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--study-text);
+}
+
+.review-detail {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--study-text-muted);
+}
+
+/* 弹窗遮罩 */
+.study-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.study-modal {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg);
+  box-shadow: var(--study-shadow-xl);
+  max-width: 580px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.study-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--study-border);
+}
+
+.study-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--study-text);
+}
+
+.study-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--study-text-muted);
+}

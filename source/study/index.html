@@ -1,0 +1,1500 @@
+---
+title: 智学伴读 - 书籍精读与闯关学习
+date: 2026-09-23 00:00:00
+type: study
+layout: page
+comments: false
+aside: false
+top_img: false
+---
+
+{% raw %}
+<div class="study-app-wrapper">
+  <!-- 引入依赖：Vue 3 与 Confetti 烟花特效 -->
+  <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="/js/study-app.js"></script>
+
+  <div id="smart-study-mount" class="study-app" v-cloak>
+    <!-- 顶部导航控制条 -->
+    <header class="study-header">
+      <div class="study-brand">
+        <div class="study-brand-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="study-brand-title">智学伴读 · SmartBook</h1>
+          <div class="study-brand-subtitle">掌握式读书法：输入提炼 → 深度吸收 → 考核通关 → 解锁进阶</div>
+        </div>
+      </div>
+
+      <div class="study-header-actions">
+        <!-- 书籍选择下拉菜单 -->
+        <select class="study-btn study-btn-outline" v-model="currentBookId" @change="switchBook(currentBookId)">
+          <option v-for="book in books" :key="book.id" :value="book.id">
+            📚 {{ book.title }}
+          </option>
+        </select>
+
+        <!-- 导入书籍按钮 -->
+        <button class="study-btn study-btn-primary" @click="showImportModal = true">
+          <i class="fas fa-file-import"></i> 导入新书
+        </button>
+
+        <!-- 设置与进度管理 -->
+        <button class="study-btn study-btn-outline" @click="showSettingsModal = true" title="学习设置与进度">
+          <i class="fas fa-cog"></i> 设置
+        </button>
+      </div>
+    </header>
+
+    <!-- 工作区主体 -->
+    <div class="study-workspace">
+      <!-- 左侧栏：书籍档案与章节闯关树 -->
+      <aside class="study-sidebar">
+        <!-- 当前书籍卡片 -->
+        <div class="study-card book-info-card">
+          <span class="book-badge"><i :class="currentBook.cover || 'fas fa-book'"></i> 研读书籍</span>
+          <h3 class="book-title">{{ currentBook.title }}</h3>
+          <div class="book-author">作者：{{ currentBook.author || '未知' }}</div>
+          <p class="book-desc">{{ currentBook.description || '暂无书籍简介' }}</p>
+
+          <!-- 全书掌握进度条 -->
+          <div class="book-progress-box">
+            <div class="book-progress-header">
+              <span>掌握进度</span>
+              <strong>{{ passedChaptersCount }} / {{ currentBook.chapters.length }} 章 ({{ overallProgressPercent }}%)</strong>
+            </div>
+            <div class="book-progress-bar-bg">
+              <div class="book-progress-bar-fill" :style="{ width: overallProgressPercent + '%' }"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 章节列表与闯关解锁状态 -->
+        <div class="study-card">
+          <div class="chapter-list-title">
+            <span><i class="fas fa-route"></i> 章节闯关路线图</span>
+            <span style="font-size: 0.75rem; font-weight: normal; color: var(--study-text-muted);">
+              通过考核解锁下一章
+            </span>
+          </div>
+
+          <div class="chapter-items">
+            <div
+              v-for="(chapter, idx) in currentBook.chapters"
+              :key="chapter.id"
+              class="chapter-item"
+              :class="{
+                active: currentChapterIndex === idx,
+                locked: chapter.status === 'locked' && !devMode
+              }"
+              @click="selectChapter(idx)"
+            >
+              <!-- 状态徽章 -->
+              <div
+                class="chapter-status-icon"
+                :class="{
+                  'status-passed': chapter.status === 'passed',
+                  'status-unlocked': chapter.status === 'unlocked',
+                  'status-locked': chapter.status === 'locked' && !devMode
+                }"
+              >
+                <i v-if="chapter.status === 'passed'" class="fas fa-check"></i>
+                <i v-else-if="chapter.status === 'unlocked' || devMode" class="fas fa-book-open"></i>
+                <i v-else class="fas fa-lock"></i>
+              </div>
+
+              <!-- 章节信息 -->
+              <div class="chapter-info">
+                <div class="chapter-name" :title="chapter.title">
+                  {{ chapter.title }}
+                </div>
+                <div class="chapter-meta">
+                  <span v-if="chapter.status === 'passed'" style="color: var(--study-success);">
+                    <i class="fas fa-medal"></i> 已精通 ({{ chapter.score || 100 }}分)
+                  </span>
+                  <span v-else-if="chapter.status === 'unlocked' || devMode" style="color: var(--study-primary);">
+                    <i class="fas fa-spinner fa-spin"></i> 进行中
+                  </span>
+                  <span v-else>
+                    <i class="fas fa-lock"></i> 待前置章节通关解锁
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右侧主区域：学习材料研读 与 考核闯关 -->
+      <main class="study-main">
+        <!-- 章节头部与专注学习计时条 -->
+        <div class="chapter-hero">
+          <div class="chapter-title-group">
+            <h2>{{ currentChapter.title }}</h2>
+            <div class="chapter-tags">
+              <span class="tag-badge" v-for="tag in (currentChapter.tags || ['精读', '深度学习'])" :key="tag">
+                # {{ tag }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 专注计时器模块 -->
+          <div class="focus-timer-box">
+            <div class="timer-display">
+              <i class="fas fa-stopwatch" style="color: var(--study-primary); margin-right: 0.3rem;"></i>
+              <span class="timer-digits">{{ formattedTimer }}</span>
+              <span class="timer-label">专注用时</span>
+            </div>
+            <div style="display: flex; gap: 0.3rem;">
+              <button
+                class="study-btn study-btn-sm"
+                :class="isTimerRunning ? 'study-btn-outline' : 'study-btn-primary'"
+                @click="toggleTimer"
+              >
+                <i :class="isTimerRunning ? 'fas fa-pause' : 'fas fa-play'"></i>
+                {{ isTimerRunning ? '暂停' : '专注' }}
+              </button>
+              <button
+                class="study-btn study-btn-sm study-btn-outline"
+                @click="resetTimer"
+                title="重置计时"
+              >
+                <i class="fas fa-rotate-left"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模式切换 Tab：研读材料 / 考核闯关 -->
+        <div class="view-mode-tabs">
+          <button
+            class="mode-tab-btn"
+            :class="{ active: currentMode === 'study' }"
+            @click="currentMode = 'study'"
+          >
+            <i class="fas fa-book-reader"></i> 1. 研读学习材料
+          </button>
+          <button
+            class="mode-tab-btn"
+            :class="{ active: currentMode === 'quiz' }"
+            @click="startQuizMode"
+          >
+            <i class="fas fa-tasks"></i> 2. 章节考核闯关
+            <span class="badge-pill" v-if="currentChapter.status === 'passed'">已通关 ✅</span>
+            <span class="badge-pill" v-else-if="canTakeQuiz">可考核 ⚡</span>
+            <span class="badge-pill" v-else>建议研读</span>
+          </button>
+        </div>
+
+        <!-- ======================= 模式一：研读学习材料 ======================= -->
+        <div v-show="currentMode === 'study'" class="study-card">
+          <!-- 5 大材料维度子导航 Tab -->
+          <nav class="materials-nav">
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'summary' }"
+              @click="activeMaterialTab = 'summary'"
+            >
+              <i class="fas fa-thumbtack"></i> 核心要点速览
+            </button>
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'feynman' }"
+              @click="activeMaterialTab = 'feynman'"
+            >
+              <i class="fas fa-lightbulb"></i> 费曼白话精炼
+            </button>
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'flashcards' }"
+              @click="activeMaterialTab = 'flashcards'"
+            >
+              <i class="fas fa-clone"></i> 3D 记忆闪卡
+              <span style="font-size: 0.72rem; opacity: 0.8;">({{ currentChapter.flashcards ? currentChapter.flashcards.length : 0 }})</span>
+            </button>
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'mindmap' }"
+              @click="activeMaterialTab = 'mindmap'"
+            >
+              <i class="fas fa-sitemap"></i> 结构思维导图
+            </button>
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'actionables' }"
+              @click="activeMaterialTab = 'actionables'"
+            >
+              <i class="fas fa-shoe-prints"></i> 实战行动清单
+            </button>
+            <button
+              class="material-tab"
+              :class="{ active: activeMaterialTab === 'content' }"
+              @click="activeMaterialTab = 'content'"
+            >
+              <i class="fas fa-align-left"></i> 章节原文精读
+            </button>
+
+            <!-- AI 智能生成/重构材料按钮 -->
+            <div style="margin-left: auto; display: flex; align-items: center;">
+              <button
+                class="study-btn study-btn-sm study-btn-outline"
+                @click="triggerAIGeneration"
+                :disabled="isAIGenerating"
+                title="智能提炼当前章节的学习材料与考核考题"
+              >
+                <i :class="isAIGenerating ? 'fas fa-spinner fa-spin' : 'fas fa-wand-magic-sparkles'" style="color: #a855f7;"></i>
+                {{ isAIGenerating ? 'AI 提炼中...' : '智能提炼本章' }}
+              </button>
+            </div>
+          </nav>
+
+          <!-- 维度 1：核心要点 -->
+          <div v-if="activeMaterialTab === 'summary'">
+            <div class="quote-highlight" v-if="currentChapter.summary && currentChapter.summary.quote">
+              <i class="fas fa-quote-left" style="opacity: 0.4; margin-right: 0.4rem;"></i>
+              {{ currentChapter.summary.quote }}
+            </div>
+
+            <div class="concept-grid" v-if="currentChapter.summary && currentChapter.summary.takeaways">
+              <div
+                class="concept-item"
+                v-for="(item, idx) in currentChapter.summary.takeaways"
+                :key="idx"
+              >
+                <h4 class="concept-item-title">{{ idx + 1 }}. {{ item.title }}</h4>
+                <p class="concept-item-body">{{ item.body }}</p>
+              </div>
+            </div>
+            <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
+              暂无核心要点，点击右上角【AI 深度生成】可一键提炼。
+            </div>
+          </div>
+
+          <!-- 维度 2：费曼白话精炼 -->
+          <div v-if="activeMaterialTab === 'feynman'">
+            <div class="feynman-box" v-if="currentChapter.feynman">
+              <div class="analogy-card" v-if="currentChapter.feynman.analogy">
+                <strong style="color: #b45309;"><i class="fas fa-magic"></i> 生动生活化隐喻：</strong>
+                <div style="margin-top: 0.5rem; line-height: 1.6;">{{ currentChapter.feynman.analogy }}</div>
+              </div>
+
+              <div style="white-space: pre-line; line-height: 1.8; margin-top: 1rem;">
+                {{ currentChapter.feynman.explanation }}
+              </div>
+            </div>
+            <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
+              暂无费曼白话材料。
+            </div>
+          </div>
+
+          <!-- 维度 3：3D 记忆抽认卡 (Flashcards) -->
+          <div v-if="activeMaterialTab === 'flashcards'">
+            <div class="flashcards-container" v-if="currentChapter.flashcards && currentChapter.flashcards.length">
+              <div style="font-size: 0.85rem; color: var(--study-text-muted);">
+                点击卡片可 3D 翻转查看答案与解析 · 进度：{{ currentCardIndex + 1 }} / {{ currentChapter.flashcards.length }}
+              </div>
+
+              <!-- 3D 卡片舞台 -->
+              <div
+                class="flashcard-stage"
+                :class="{ flipped: isCardFlipped }"
+                @click="isCardFlipped = !isCardFlipped"
+              >
+                <div class="flashcard-inner">
+                  <!-- 正面 -->
+                  <div class="flashcard-face flashcard-front">
+                    <span class="flashcard-tag">
+                      <i class="fas fa-question-circle"></i> {{ currentChapter.flashcards[currentCardIndex].tag || '核心记忆点' }}
+                    </span>
+                    <div class="flashcard-text">
+                      {{ currentChapter.flashcards[currentCardIndex].front }}
+                    </div>
+                    <div class="flashcard-hint">
+                      <i class="fas fa-hand-pointer"></i> 点击卡片翻转看解析
+                    </div>
+                  </div>
+
+                  <!-- 背面 -->
+                  <div class="flashcard-face flashcard-back">
+                    <span class="flashcard-tag" style="background: rgba(16,185,129,0.15); color: var(--study-success);">
+                      <i class="fas fa-check-circle"></i> 记忆与原理拆解
+                    </span>
+                    <div class="flashcard-text" style="font-size: 0.98rem; font-weight: normal; text-align: left; white-space: pre-line;">
+                      {{ currentChapter.flashcards[currentCardIndex].back }}
+                    </div>
+                    <div class="flashcard-hint">
+                      <i class="fas fa-undo"></i> 再次点击翻回正面
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 翻卡控制器 -->
+              <div class="flashcard-controls">
+                <button
+                  class="study-btn study-btn-outline"
+                  :disabled="currentCardIndex === 0"
+                  @click="prevCard"
+                >
+                  <i class="fas fa-chevron-left"></i> 上一张
+                </button>
+
+                <button
+                  class="study-btn"
+                  :class="currentChapter.flashcards[currentCardIndex].mastered ? 'study-btn-success' : 'study-btn-outline'"
+                  @click="toggleCardMastered"
+                >
+                  <i :class="currentChapter.flashcards[currentCardIndex].mastered ? 'fas fa-check' : 'far fa-circle'"></i>
+                  {{ currentChapter.flashcards[currentCardIndex].mastered ? '已掌握' : '标记已掌握' }}
+                </button>
+
+                <button
+                  class="study-btn study-btn-outline"
+                  :disabled="currentCardIndex === currentChapter.flashcards.length - 1"
+                  @click="nextCard"
+                >
+                  下一张 <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+            <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
+              暂无记忆闪卡。
+            </div>
+          </div>
+
+          <!-- 维度 4：结构思维导图 -->
+          <div v-if="activeMaterialTab === 'mindmap'">
+            <div class="mindmap-tree" v-if="currentChapter.mindmap && currentChapter.mindmap.length">
+              <div
+                class="mindmap-node"
+                v-for="(node, nIdx) in currentChapter.mindmap"
+                :key="nIdx"
+              >
+                <div class="mindmap-node-title primary">
+                  <i class="fas fa-folder-open"></i> {{ node.title }}
+                </div>
+                <div class="mindmap-children" v-if="node.children && node.children.length">
+                  <div
+                    class="mindmap-node"
+                    v-for="(child, cIdx) in node.children"
+                    :key="cIdx"
+                  >
+                    <div class="mindmap-node-title">
+                      <i class="fas fa-angle-right" style="color: var(--study-primary);"></i> {{ child }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
+              暂无结构导图。
+            </div>
+          </div>
+
+          <!-- 维度 5：实战落地行动清单 -->
+          <div v-if="activeMaterialTab === 'actionables'">
+            <div v-if="currentChapter.actionables && currentChapter.actionables.length">
+              <div
+                class="actionable-item"
+                v-for="(act, aIdx) in currentChapter.actionables"
+                :key="aIdx"
+              >
+                <i class="fas fa-check-circle action-check-icon"></i>
+                <div class="action-body">
+                  <strong>行动准则 {{ aIdx + 1 }}：{{ act.action }}</strong>
+                  <span>执行逻辑：{{ act.reason }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
+              暂无落地清单。
+            </div>
+          </div>
+
+          <!-- 维度 6：原文阅读 -->
+          <div v-if="activeMaterialTab === 'content'">
+            <div style="line-height: 1.85; font-size: 0.95rem; white-space: pre-line; color: var(--study-text);">
+              {{ currentChapter.content || '暂无原文内容。' }}
+            </div>
+          </div>
+
+          <!-- 底部完成研读 & 前往考核引导条 -->
+          <div style="margin-top: 2rem; padding-top: 1.2rem; border-top: 1px solid var(--study-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
+            <div style="font-size: 0.85rem; color: var(--study-text-muted);">
+              <i class="fas fa-info-circle"></i> 认真研读上述材料后，即可点击右侧按钮进入本章考核闯关。
+            </div>
+            <button class="study-btn study-btn-primary" @click="startQuizMode">
+              <i class="fas fa-graduation-cap"></i> 进入章节考核闯关 <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ======================= 模式二：考核闯关答题区 ======================= -->
+        <div v-show="currentMode === 'quiz'" class="quiz-wrapper">
+          <!-- 考核状态条 -->
+          <div class="quiz-header-banner">
+            <div>
+              <div class="quiz-info-title">
+                <i class="fas fa-spell-check" style="color: var(--study-primary);"></i>
+                {{ currentChapter.title }} · 成果检验
+              </div>
+              <div class="quiz-info-desc">
+                题量：{{ quizQuestions.length }} 道多样化测试题 · 及格线：{{ passScoreThreshold }}% · 通过后即可解锁下一章节
+              </div>
+            </div>
+
+            <!-- 题目圆点快速跳转 -->
+            <div class="quiz-nav-dots" v-if="!quizSubmitted">
+              <div
+                v-for="(q, qIdx) in quizQuestions"
+                :key="q.id"
+                class="quiz-dot"
+                :class="{
+                  active: currentQIndex === qIdx,
+                  answered: isQuestionAnswered(qIdx)
+                }"
+                @click="currentQIndex = qIdx"
+              >
+                {{ qIdx + 1 }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 答题卡片（未交卷状态） -->
+          <div class="question-card" v-if="!quizSubmitted && currentQ">
+            <!-- 题型标签 -->
+            <div class="question-type-pill">
+              <span v-if="currentQ.type === 'single'">单项选择题</span>
+              <span v-else-if="currentQ.type === 'multiple'">多项选择题</span>
+              <span v-else-if="currentQ.type === 'boolean'">判断是非题</span>
+              <span v-else-if="currentQ.type === 'fill'">填空 / 概念匹配题</span>
+              <span v-else>情景思考题</span>
+            </div>
+
+            <!-- 题目文本 -->
+            <div class="question-text">
+              <strong>第 {{ currentQIndex + 1 }} 题：</strong> {{ currentQ.question }}
+            </div>
+
+            <!-- 题型 1: 单选题 / 判断题 -->
+            <div class="options-list" v-if="currentQ.type === 'single' || currentQ.type === 'boolean' || currentQ.type === 'fill'">
+              <div
+                class="option-item"
+                v-for="(opt, oIdx) in currentQ.options"
+                :key="oIdx"
+                :class="{ selected: userAnswers[currentQIndex] === opt }"
+                @click="selectSingleOption(opt)"
+              >
+                <div class="option-label">
+                  {{ String.fromCharCode(65 + oIdx) }}
+                </div>
+                <div class="option-text">{{ opt }}</div>
+              </div>
+            </div>
+
+            <!-- 题型 2: 多选题 -->
+            <div class="options-list" v-else-if="currentQ.type === 'multiple'">
+              <div
+                class="option-item"
+                v-for="(opt, oIdx) in currentQ.options"
+                :key="oIdx"
+                :class="{ selected: isMultiOptionSelected(opt) }"
+                @click="toggleMultiOption(opt)"
+              >
+                <div class="option-label">
+                  <i :class="isMultiOptionSelected(opt) ? 'fas fa-check-square' : 'far fa-square'"></i>
+                </div>
+                <div class="option-text">{{ opt }}</div>
+              </div>
+            </div>
+
+            <!-- 题型 3: 思考简答题 -->
+            <div v-else-if="currentQ.type === 'open'">
+              <textarea
+                class="quiz-input-textarea"
+                v-model="userAnswers[currentQIndex]"
+                placeholder="请输入您的个人理解、结合实际案例的思考..."
+              ></textarea>
+            </div>
+
+            <!-- 题目切换导航操作栏 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 0.8rem;">
+              <button
+                class="study-btn study-btn-outline"
+                :disabled="currentQIndex === 0"
+                @click="currentQIndex--"
+              >
+                <i class="fas fa-chevron-left"></i> 上一题
+              </button>
+
+              <div style="display: flex; gap: 0.6rem;">
+                <button
+                  class="study-btn study-btn-outline"
+                  v-if="currentQIndex < quizQuestions.length - 1"
+                  @click="currentQIndex++"
+                >
+                  下一题 <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <button
+                  class="study-btn study-btn-success"
+                  @click="submitQuiz"
+                >
+                  <i class="fas fa-paper-plane"></i> 提交考卷评测
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 考核结果卡片（已交卷状态） -->
+          <div class="result-card" v-if="quizSubmitted">
+            <div
+              class="result-badge-icon"
+              :class="quizResult.passed ? 'result-badge-passed' : 'result-badge-failed'"
+            >
+              <i :class="quizResult.passed ? 'fas fa-trophy' : 'fas fa-shield-cat'"></i>
+            </div>
+
+            <h2 class="result-score-title">
+              {{ quizResult.passed ? '🎉 恭喜！考核通关！' : '💪 差一点点，还需努力！' }}
+            </h2>
+
+            <div class="result-score-subtitle">
+              本次综合考核得分：<strong style="font-size: 1.4rem; color: var(--study-primary);">{{ quizResult.score }}</strong> 分 / 满分 100 分
+              （及格通关门槛：{{ passScoreThreshold }} 分）
+            </div>
+
+            <!-- 通关激励与解锁下一章 -->
+            <div v-if="quizResult.passed" style="margin-bottom: 1.5rem;">
+              <div style="display: inline-block; padding: 0.6rem 1.2rem; background: var(--study-success-light); color: var(--study-success); border-radius: var(--study-radius-sm); font-weight: 600; margin-bottom: 1rem;">
+                <i class="fas fa-lock-open"></i> 达成精通！下一章节已成功解锁！
+              </div>
+              <div>
+                <button
+                  v-if="hasNextChapter"
+                  class="study-btn study-btn-primary"
+                  style="font-size: 1rem; padding: 0.75rem 1.5rem;"
+                  @click="goToNextChapter"
+                >
+                  <i class="fas fa-arrow-circle-right"></i> 立即进入下一章节学习
+                </button>
+                <span v-else style="color: var(--study-success); font-weight: 600;">
+                  🌟 恭喜！您已经学完全书所有章节！
+                </span>
+              </div>
+            </div>
+
+            <!-- 未通过引导 -->
+            <div v-else style="margin-bottom: 1.5rem;">
+              <div style="display: inline-block; padding: 0.6rem 1.2rem; background: var(--study-danger-light); color: var(--study-danger); border-radius: var(--study-radius-sm); font-weight: 600; margin-bottom: 1rem;">
+                <i class="fas fa-lock"></i> 抱歉，下一章节仍处于锁定状态。请针对下方错题重新研读材料后再次挑战。
+              </div>
+              <div style="display: flex; gap: 0.8rem; justify-content: center;">
+                <button class="study-btn study-btn-primary" @click="currentMode = 'study'">
+                  <i class="fas fa-book-open"></i> 返回复习本章学习材料
+                </button>
+                <button class="study-btn study-btn-outline" @click="retakeQuiz">
+                  <i class="fas fa-rotate-left"></i> 重新挑战本次考核
+                </button>
+              </div>
+            </div>
+
+            <!-- 详细错题分析与知识盲区诊断 -->
+            <div class="review-analysis">
+              <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--study-text);">
+                <i class="fas fa-clipboard-check"></i> 逐题详析与知识点诊断报告
+              </h3>
+
+              <div
+                v-for="(analysis, aIdx) in quizResult.analyses"
+                :key="aIdx"
+                class="review-item"
+                :class="analysis.isCorrect ? 'correct' : 'wrong'"
+              >
+                <div class="review-q-title">
+                  <span v-if="analysis.isCorrect" style="color: var(--study-success);">
+                    <i class="fas fa-check-circle"></i> 第 {{ aIdx + 1 }} 题 (正确 +{{ analysis.points }}分)
+                  </span>
+                  <span v-else style="color: var(--study-danger);">
+                    <i class="fas fa-times-circle"></i> 第 {{ aIdx + 1 }} 题 (未得分)
+                  </span>
+                  ：{{ analysis.question }}
+                </div>
+
+                <div class="review-detail">
+                  <div style="margin-bottom: 0.3rem;">
+                    <strong>您的作答：</strong>
+                    <span :style="{ color: analysis.isCorrect ? 'var(--study-success)' : 'var(--study-danger)' }">
+                      {{ formatAnswer(analysis.userAnswer) || '未作答' }}
+                    </span>
+                  </div>
+                  <div style="margin-bottom: 0.4rem; color: var(--study-success);">
+                    <strong>参考答案：</strong> {{ formatAnswer(analysis.correctAnswer) }}
+                  </div>
+                  <div style="background: var(--study-card-bg); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--study-border);">
+                    <strong style="color: var(--study-primary);"><i class="fas fa-lightbulb"></i> 考点解析：</strong>
+                    {{ analysis.explanation }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ======================= 弹窗 1：导入书籍与智能拆分 ======================= -->
+    <div class="study-modal-backdrop" v-if="showImportModal" @click.self="showImportModal = false">
+      <div class="study-modal">
+        <div class="study-modal-header">
+          <h3 class="study-modal-title"><i class="fas fa-file-import"></i> 导入新书与智能分章</h3>
+          <button class="study-modal-close" @click="showImportModal = false">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div>
+            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">书名：</label>
+            <input
+              type="text"
+              v-model="importForm.title"
+              placeholder="例如：《原则：生活和工作》"
+              style="width: 100%; box-sizing: border-box; padding: 0.6rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text);"
+            />
+          </div>
+
+          <div>
+            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">作者：</label>
+            <input
+              type="text"
+              v-model="importForm.author"
+              placeholder="例如：瑞·达利欧"
+              style="width: 100%; box-sizing: border-box; padding: 0.6rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text);"
+            />
+          </div>
+
+          <!-- 上传本地文件 -->
+          <div>
+            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
+              选择电子书文件 (.txt / .md)：
+            </label>
+            <input
+              type="file"
+              accept=".txt,.md,.markdown"
+              @change="handleFileUpload"
+              style="font-size: 0.85rem;"
+            />
+          </div>
+
+          <!-- 或直接粘贴文本 -->
+          <div>
+            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
+              或者直接在此粘贴书籍长文（支持智能正则自动分章）：
+            </label>
+            <textarea
+              v-model="importForm.rawText"
+              rows="6"
+              placeholder="在此粘贴书籍全本或数个章节内容，系统将自动识别【第X章】、【Chapter X】或【# 标题】进行章节拆解并生成学习材料和考核题..."
+              style="width: 100%; box-sizing: border-box; padding: 0.6rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.85rem;"
+            ></textarea>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+            <button class="study-btn study-btn-outline" @click="showImportModal = false">取消</button>
+            <button class="study-btn study-btn-primary" @click="confirmImportBook">
+              <i class="fas fa-check"></i> 智能解析并加入书架
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================= 弹窗 2：设置与档案管理 ======================= -->
+    <div class="study-modal-backdrop" v-if="showSettingsModal" @click.self="showSettingsModal = false">
+      <div class="study-modal">
+        <div class="study-modal-header">
+          <h3 class="study-modal-title"><i class="fas fa-cog"></i> 学习偏好与 API 配置</h3>
+          <button class="study-modal-close" @click="showSettingsModal = false">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+          <!-- 考核及格线 -->
+          <div>
+            <label style="font-size: 0.88rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
+              章节考核及格通关门槛：{{ passScoreThreshold }} 分
+            </label>
+            <input
+              type="range"
+              min="50"
+              max="100"
+              step="5"
+              v-model.number="passScoreThreshold"
+              style="width: 100%;"
+            />
+            <div style="font-size: 0.76rem; color: var(--study-text-muted);">
+              答题得分达到此分数即可通关并自动解锁下一章节。推荐 80 分。
+            </div>
+          </div>
+
+          <!-- 快速体验 / 教师跳关模式 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--study-bg); border-radius: 8px; border: 1px solid var(--study-border);">
+            <div>
+              <div style="font-weight: 600; font-size: 0.9rem;">开发者 / 免考解锁模式</div>
+              <div style="font-size: 0.76rem; color: var(--study-text-muted);">开启后可无需考核直接点击查阅任意章节</div>
+            </div>
+            <input type="checkbox" v-model="devMode" style="width: 20px; height: 20px; cursor: pointer;" />
+          </div>
+
+          <!-- AI API 配置 (可选) -->
+          <div style="border-top: 1px solid var(--study-border); padding-top: 1rem;">
+            <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem;">
+              <i class="fas fa-robot"></i> 大模型 API 增强配置（可选）
+            </div>
+            <div style="font-size: 0.78rem; color: var(--study-text-muted); margin-bottom: 0.8rem;">
+              无需 API 也可使用内置离线提取引擎；配置后上传任意自定义书本均可调用 AI 进行深度材料提炼与高质量出题。
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+              <input
+                type="text"
+                v-model="aiConfig.baseUrl"
+                placeholder="Base URL (例如 https://api.deepseek.com/v1)"
+                style="width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.85rem;"
+              />
+              <input
+                type="password"
+                v-model="aiConfig.apiKey"
+                placeholder="API Key (例如 sk-xxxx)"
+                style="width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.85rem;"
+              />
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <input
+                  type="text"
+                  v-model="aiConfig.model"
+                  placeholder="Model (例如 auto 或 deepseek-v3)"
+                  style="flex: 1; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.85rem;"
+                />
+              </div>
+              <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; font-size: 0.75rem;">
+                <span style="color: var(--study-text-muted);">推荐模型：</span>
+                <a href="javascript:void(0)" @click="aiConfig.model = 'auto'" style="padding: 2px 6px; background: var(--study-primary-light); border-radius: 4px; text-decoration: none;">auto(智能路由)</a>
+                <a href="javascript:void(0)" @click="aiConfig.model = 'deepseek-v3'" style="padding: 2px 6px; background: var(--study-primary-light); border-radius: 4px; text-decoration: none;">deepseek-v3</a>
+                <a href="javascript:void(0)" @click="aiConfig.model = 'qwen2.5-72b-instruct'" style="padding: 2px 6px; background: var(--study-primary-light); border-radius: 4px; text-decoration: none;">qwen2.5-72b</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 学习档案备份与重置 -->
+          <div style="border-top: 1px solid var(--study-border); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
+            <button class="study-btn study-btn-sm study-btn-outline" @click="resetCurrentBookProgress">
+              <i class="fas fa-trash-arrow-up"></i> 重置本书进度
+            </button>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="study-btn study-btn-sm study-btn-outline" @click="exportData">
+                <i class="fas fa-download"></i> 导出进度 JSON
+              </button>
+              <button class="study-btn study-btn-sm study-btn-primary" @click="saveSettings">
+                <i class="fas fa-save"></i> 保存设置
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function initSmartStudy() {
+  if (typeof Vue === 'undefined') return;
+  const { createApp } = Vue;
+
+  const STORAGE_KEY = 'smart_study_app_data_v1';
+  const CONFIG_KEY = 'smart_study_app_config_v1';
+
+  // 读取已保存的数据或使用默认精品书库
+  let initialBooks = window.SmartBookApp ? window.SmartBookApp.DEFAULT_BOOKS : [];
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length) {
+        initialBooks = parsed;
+      }
+    }
+  } catch (e) {
+    console.error('加载本地进度失败', e);
+  }
+
+  // 默认使用用户的 API 端点与 Key
+  const DEFAULT_AI_CONFIG = {
+    baseUrl: 'http://140.245.65.111:3005/v1',
+    apiKey: 'freellmapi-5970cc45963020cb59754a87d5fd0fd7d3b8f373c8c19bed',
+    model: 'auto'
+  };
+
+  // 读取设置
+  let savedConfig = {
+    passScoreThreshold: 80,
+    devMode: false,
+    aiConfig: { ...DEFAULT_AI_CONFIG }
+  };
+  try {
+    const cfg = localStorage.getItem(CONFIG_KEY);
+    if (cfg) {
+      const parsed = JSON.parse(cfg);
+      savedConfig = { ...savedConfig, ...parsed };
+      // 若原存储为空或旧默认值，自动同步为可用 API
+      if (!savedConfig.aiConfig || !savedConfig.aiConfig.apiKey || savedConfig.aiConfig.baseUrl.includes('api.deepseek.com')) {
+        savedConfig.aiConfig = { ...DEFAULT_AI_CONFIG };
+      }
+    }
+  } catch (e) {}
+
+  const app = createApp({
+    data() {
+      return {
+        books: initialBooks,
+        currentBookId: initialBooks[0] ? initialBooks[0].id : '',
+        currentChapterIndex: 0,
+        currentMode: 'study', // 'study' or 'quiz'
+        activeMaterialTab: 'summary', // 'summary', 'feynman', 'flashcards', 'mindmap', 'actionables', 'content'
+
+        // 闪卡交互状态
+        currentCardIndex: 0,
+        isCardFlipped: false,
+
+        // 专注计时器状态
+        timerSeconds: 0,
+        isTimerRunning: false,
+        timerInterval: null,
+
+        // 考核测验状态
+        currentQIndex: 0,
+        userAnswers: {},
+        quizSubmitted: false,
+        quizResult: {
+          score: 0,
+          passed: false,
+          analyses: []
+        },
+
+        // 设置与弹窗
+        showImportModal: false,
+        showSettingsModal: false,
+        passScoreThreshold: savedConfig.passScoreThreshold,
+        devMode: savedConfig.devMode,
+        aiConfig: savedConfig.aiConfig,
+
+        // 导入表单
+        importForm: {
+          title: '',
+          author: '',
+          rawText: ''
+        },
+        isAIGenerating: false
+      };
+    },
+    computed: {
+      currentBook() {
+        return this.books.find(b => b.id === this.currentBookId) || this.books[0] || { chapters: [] };
+      },
+      currentChapter() {
+        if (!this.currentBook.chapters || !this.currentBook.chapters.length) {
+          return {};
+        }
+        return this.currentBook.chapters[this.currentChapterIndex] || this.currentBook.chapters[0];
+      },
+      passedChaptersCount() {
+        if (!this.currentBook.chapters) return 0;
+        return this.currentBook.chapters.filter(c => c.status === 'passed').length;
+      },
+      overallProgressPercent() {
+        if (!this.currentBook.chapters || !this.currentBook.chapters.length) return 0;
+        return Math.round((this.passedChaptersCount / this.currentBook.chapters.length) * 100);
+      },
+      formattedTimer() {
+        const mins = Math.floor(this.timerSeconds / 60);
+        const secs = this.timerSeconds % 60;
+        return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      },
+      canTakeQuiz() {
+        return this.timerSeconds >= 15 || this.currentChapter.status === 'passed' || this.devMode;
+      },
+      quizQuestions() {
+        return this.currentChapter.quiz || [];
+      },
+      currentQ() {
+        return this.quizQuestions[this.currentQIndex] || null;
+      },
+      hasNextChapter() {
+        return this.currentChapterIndex < this.currentBook.chapters.length - 1;
+      }
+    },
+    methods: {
+      switchBook(bookId) {
+        this.currentBookId = bookId;
+        this.currentChapterIndex = 0;
+        this.resetQuizState();
+        this.resetCardState();
+        this.resetTimer();
+        this.activeMaterialTab = 'summary';
+        this.currentMode = 'study';
+      },
+      selectChapter(idx) {
+        const ch = this.currentBook.chapters[idx];
+        if (!ch) return;
+        if (ch.status === 'locked' && !this.devMode) {
+          alert('🔒 该章节尚未解锁！请先完成前置章节的学习并通过考核闯关哦。');
+          return;
+        }
+        this.currentChapterIndex = idx;
+        this.resetQuizState();
+        this.resetCardState();
+        this.resetTimer();
+        this.currentMode = 'study';
+      },
+      // 计时器控制
+      toggleTimer() {
+        if (this.isTimerRunning) {
+          clearInterval(this.timerInterval);
+          this.isTimerRunning = false;
+        } else {
+          this.isTimerRunning = true;
+          this.timerInterval = setInterval(() => {
+            this.timerSeconds++;
+            if (this.currentChapter) {
+              this.currentChapter.studyTime = (this.currentChapter.studyTime || 0) + 1;
+            }
+          }, 1000);
+        }
+      },
+      resetTimer() {
+        clearInterval(this.timerInterval);
+        this.isTimerRunning = false;
+        this.timerSeconds = 0;
+      },
+      // 闪卡控制
+      resetCardState() {
+        this.currentCardIndex = 0;
+        this.isCardFlipped = false;
+      },
+      nextCard() {
+        if (this.currentChapter.flashcards && this.currentCardIndex < this.currentChapter.flashcards.length - 1) {
+          this.isCardFlipped = false;
+          setTimeout(() => {
+            this.currentCardIndex++;
+          }, 150);
+        }
+      },
+      prevCard() {
+        if (this.currentCardIndex > 0) {
+          this.isCardFlipped = false;
+          setTimeout(() => {
+            this.currentCardIndex--;
+          }, 150);
+        }
+      },
+      toggleCardMastered() {
+        const card = this.currentChapter.flashcards[this.currentCardIndex];
+        if (card) {
+          card.mastered = !card.mastered;
+          this.saveToStorage();
+        }
+      },
+      // 测验控制
+      startQuizMode() {
+        this.currentMode = 'quiz';
+        if (!this.quizSubmitted) {
+          this.currentQIndex = 0;
+        }
+      },
+      resetQuizState() {
+        this.currentQIndex = 0;
+        this.userAnswers = {};
+        this.quizSubmitted = false;
+        this.quizResult = { score: 0, passed: false, analyses: [] };
+      },
+      retakeQuiz() {
+        this.resetQuizState();
+      },
+      selectSingleOption(opt) {
+        this.userAnswers[this.currentQIndex] = opt;
+      },
+      isMultiOptionSelected(opt) {
+        const ans = this.userAnswers[this.currentQIndex];
+        return Array.isArray(ans) && ans.includes(opt);
+      },
+      toggleMultiOption(opt) {
+        if (!Array.isArray(this.userAnswers[this.currentQIndex])) {
+          this.userAnswers[this.currentQIndex] = [];
+        }
+        const arr = this.userAnswers[this.currentQIndex];
+        const idx = arr.indexOf(opt);
+        if (idx > -1) {
+          arr.splice(idx, 1);
+        } else {
+          arr.push(opt);
+        }
+      },
+      isQuestionAnswered(qIdx) {
+        const a = this.userAnswers[qIdx];
+        if (Array.isArray(a)) return a.length > 0;
+        return a !== undefined && a !== null && a !== '';
+      },
+      submitQuiz() {
+        const questions = this.quizQuestions;
+        if (!questions.length) {
+          alert('本章节尚未配置考核题');
+          return;
+        }
+
+        // 校验是否还有题目未做
+        let unansweredCount = 0;
+        for (let i = 0; i < questions.length; i++) {
+          if (!this.isQuestionAnswered(i)) {
+            unansweredCount++;
+          }
+        }
+        if (unansweredCount > 0) {
+          if (!confirm(`您还有 ${unansweredCount} 道题未作答，确定现在提交考卷吗？`)) {
+            return;
+          }
+        }
+
+        // 计算分值与逐题诊断
+        let earnedPoints = 0;
+        const totalPoints = questions.length * 25; // 假设标准化基准
+        const pointPerQ = Math.round(100 / questions.length);
+        const analyses = [];
+
+        questions.forEach((q, idx) => {
+          const userAns = this.userAnswers[idx];
+          let isCorrect = false;
+
+          if (q.type === 'multiple') {
+            if (Array.isArray(userAns) && Array.isArray(q.answer)) {
+              const s1 = [...userAns].sort().join('||');
+              const s2 = [...q.answer].sort().join('||');
+              isCorrect = s1 === s2;
+            }
+          } else if (q.type === 'open') {
+            // 开放问答题只要字数大于 5 字即视为积极作答给分
+            isCorrect = typeof userAns === 'string' && userAns.trim().length >= 5;
+          } else {
+            isCorrect = String(userAns || '').trim() === String(q.answer || '').trim();
+          }
+
+          if (isCorrect) {
+            earnedPoints += pointPerQ;
+          }
+
+          analyses.push({
+            question: q.question,
+            userAnswer: userAns,
+            correctAnswer: q.answer,
+            isCorrect: isCorrect,
+            points: isCorrect ? pointPerQ : 0,
+            explanation: q.explanation || '请参考本章关键材料要点。'
+          });
+        });
+
+        const finalScore = Math.min(100, earnedPoints);
+        const isPassed = finalScore >= this.passScoreThreshold;
+
+        this.quizResult = {
+          score: finalScore,
+          passed: isPassed,
+          analyses: analyses
+        };
+        this.quizSubmitted = true;
+
+        // 如果考核通过，执行闯关成功逻辑
+        if (isPassed) {
+          this.currentChapter.status = 'passed';
+          this.currentChapter.score = Math.max(this.currentChapter.score || 0, finalScore);
+
+          // 解锁下一章节！
+          if (this.hasNextChapter) {
+            const nextCh = this.currentBook.chapters[this.currentChapterIndex + 1];
+            if (nextCh.status === 'locked') {
+              nextCh.status = 'unlocked';
+            }
+          }
+
+          // 触发通关彩色烟花纸屑！
+          if (window.confetti) {
+            confetti({
+              particleCount: 120,
+              spread: 80,
+              origin: { y: 0.6 }
+            });
+          }
+        }
+
+        this.saveToStorage();
+      },
+      formatAnswer(ans) {
+        if (Array.isArray(ans)) return ans.join('；');
+        return ans || '';
+      },
+      goToNextChapter() {
+        if (this.hasNextChapter) {
+          this.selectChapter(this.currentChapterIndex + 1);
+        }
+      },
+      // 存储与备份
+      saveToStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.books));
+        } catch (e) {
+          console.error('保存失败', e);
+        }
+      },
+      saveSettings() {
+        try {
+          localStorage.setItem(CONFIG_KEY, JSON.stringify({
+            passScoreThreshold: this.passScoreThreshold,
+            devMode: this.devMode,
+            aiConfig: this.aiConfig
+          }));
+          this.showSettingsModal = false;
+          alert('设置已成功保存！');
+        } catch (e) {}
+      },
+      resetCurrentBookProgress() {
+        if (confirm('确定要重置当前书的学习进度吗？所有章节解锁状态将恢复为第一章初始。')) {
+          this.currentBook.chapters.forEach((ch, idx) => {
+            ch.status = idx === 0 ? 'unlocked' : 'locked';
+            ch.score = null;
+            ch.studyTime = 0;
+          });
+          this.resetQuizState();
+          this.resetTimer();
+          this.saveToStorage();
+          this.showSettingsModal = false;
+        }
+      },
+      exportData() {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.books, null, 2));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute('href', dataStr);
+        dlAnchor.setAttribute('download', 'smart-study-progress.json');
+        dlAnchor.click();
+      },
+      // 文件导入与智能分章
+      handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!this.importForm.title) {
+          this.importForm.title = file.name.replace(/\.[^/.]+$/, '');
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          this.importForm.rawText = event.target.result;
+        };
+        reader.readAsText(file);
+      },
+      confirmImportBook() {
+        const title = this.importForm.title.trim();
+        const text = this.importForm.rawText.trim();
+        if (!title || !text) {
+          alert('请填写书名并提供书籍文本内容！');
+          return;
+        }
+
+        // 智能正则切分章节：匹配常见中英文章节格式
+        // 比如：第1章、第一章、Chapter 1、# 标题等
+        const chapterRegex = /(?:^|\n)(?=(?:第\s*[0-9一二三四五六七八九十百千]+\s*[章节回篇卷]|Chapter\s+[0-9]+|#+\s+))/i;
+        let parts = text.split(chapterRegex).map(p => p.trim()).filter(Boolean);
+
+        if (parts.length === 0) {
+          parts = [text];
+        }
+
+        // 生成章节数据
+        const generatedChapters = parts.map((chunk, idx) => {
+          // 提取第一行作为章节标题
+          const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
+          const chTitle = lines[0] ? lines[0].replace(/^#+\s*/, '') : `第 ${idx + 1} 节`;
+          const content = lines.slice(1).join('\n') || chunk;
+
+          // 使用本地启发式分析引擎自动生成学习材料与考核试卷
+          return this.generateMaterialsLocally(chTitle, content, idx);
+        });
+
+        // 默认第一章解锁，后续章节锁定
+        generatedChapters.forEach((ch, i) => {
+          ch.status = i === 0 ? 'unlocked' : 'locked';
+        });
+
+        const newBook = {
+          id: 'custom-' + Date.now(),
+          title: title.startsWith('《') ? title : `《${title}》`,
+          author: this.importForm.author.trim() || '自选读本',
+          cover: 'fas fa-book-bookmark',
+          description: `共收录 ${generatedChapters.length} 个章节，已自动提炼核心要点、闪卡与闯关测验。`,
+          chapters: generatedChapters
+        };
+
+        this.books.unshift(newBook);
+        this.currentBookId = newBook.id;
+        this.saveToStorage();
+        this.showImportModal = false;
+        this.importForm = { title: '', author: '', rawText: '' };
+        alert(`恭喜！《${newBook.title}》已成功导入并智能切分为 ${generatedChapters.length} 个章节！`);
+        this.switchBook(newBook.id);
+      },
+      // 本地智能启发式材料与多题型试卷生成引擎
+      generateMaterialsLocally(title, content, index) {
+        const sentences = content.split(/[。！？\n]/).map(s => s.trim()).filter(s => s.length > 10);
+        const topSentences = sentences.slice(0, 5);
+
+        const takeaways = topSentences.map((s, idx) => ({
+          title: `核心要点 ${idx + 1}`,
+          body: s + '。'
+        }));
+
+        const flashcards = [
+          {
+            front: `【概念思考】本节《${title}》所探讨的最核心主旨是什么？`,
+            back: topSentences[0] || '提炼本章的根本逻辑与核心认知模型。',
+            tag: '主旨速记',
+            mastered: false
+          },
+          {
+            front: '如何将本章所学知识与现实生活/工作场景进行有效迁移？',
+            back: '通过具体场景练习、设立触发器（If-Then 计划），在最小行动中完成知行合一。',
+            tag: '迁移应用',
+            mastered: false
+          }
+        ];
+
+        const quiz = [
+          {
+            id: `gen-q1-${index}`,
+            type: 'single',
+            question: `在《${title}》中，下列哪一项最符合本章核心论点？`,
+            options: [
+              topSentences[0] || '坚持深度研读与刻意练习',
+              '完全凭借被动记忆和外部灌输',
+              '忽视原理直接机械模仿',
+              '遇到困难时立刻放弃'
+            ],
+            answer: topSentences[0] || '坚持深度研读与刻意练习',
+            explanation: '本章着重强调理解底层逻辑与主动建构知识体系。'
+          },
+          {
+            id: `gen-q2-${index}`,
+            type: 'boolean',
+            question: '【判断是非】学习新概念时，单纯的划线收藏能够完全替代深度主动输出。',
+            options: ['正确', '错误'],
+            answer: '错误',
+            explanation: '单纯划线属于被动输入，无法建立神经元主动检索回路。'
+          },
+          {
+            id: `gen-q3-${index}`,
+            type: 'multiple',
+            question: '要想真正掌握本章内容并在实际中应用，推荐的做法包括：（多选）',
+            options: [
+              '结合自身工作与生活案例进行费曼复述',
+              '将核心原则转化为具体可执行的微习惯',
+              '仅在脑海中泛泛浏览而不做任何记录',
+              '针对薄弱知识点反复温习与测试'
+            ],
+            answer: ['结合自身工作与生活案例进行费曼复述', '将核心原则转化为具体可执行的微习惯', '针对薄弱知识点反复温习与测试'],
+            explanation: '泛泛浏览无法形成深刻心智模型，需结合输出与实践。'
+          }
+        ];
+
+        return {
+          id: `custom-ch-${index}-${Date.now()}`,
+          title: title,
+          status: index === 0 ? 'unlocked' : 'locked',
+          score: null,
+          studyTime: 0,
+          requiredSeconds: 60,
+          tags: ['精读', '掌握式学习'],
+          summary: {
+            takeaways: takeaways.length ? takeaways : [{ title: '基础概念', body: '请研读原文进行深入提炼。' }],
+            quote: topSentences[0] ? `“${topSentences[0]}”` : '“学而不思则罔，思而不学则殆。”'
+          },
+          feynman: {
+            analogy: '【知识大厦地基的隐喻】：如果把一个复杂技能比作摩天大楼，本章阐述的概念就是深埋于地底的关键桩基。桩基打得越扎实，未来搭建高级技能时越不容易坍塌。',
+            explanation: `本章内容的核心在于：化繁为简。\n不要被大量文字扰乱视线，抓住主干：${topSentences[0] || '理解核心因果关系，并付诸实践'}。`
+          },
+          flashcards: flashcards,
+          mindmap: [
+            {
+              title: title,
+              children: topSentences.slice(0, 3)
+            }
+          ],
+          actionables: [
+            {
+              action: '用自己的话向他人转述本章核心思想',
+              reason: '检验掌握程度的最佳方式就是讲给别人听。'
+            }
+          ],
+          content: content,
+          quiz: quiz
+        };
+      },
+      async triggerAIGeneration() {
+        const ch = this.currentChapter;
+        if (!ch) return;
+        const content = ch.content || ch.title;
+        if (!content) {
+          alert('当前章节缺少文本内容，无法生成！');
+          return;
+        }
+
+        // 检查是否配置了 API Key
+        if (!this.aiConfig.apiKey || !this.aiConfig.baseUrl) {
+          const useLocal = confirm('您尚未配置大模型 API Key。\n点击【确定】使用内置离线智能启发式引擎提炼本章材料与考卷；\n点击【取消】前往设置弹窗配置 DeepSeek / OpenAI API Key 获得高精度 AI 精讲。');
+          if (useLocal) {
+            this.isAIGenerating = true;
+            setTimeout(() => {
+              const generated = this.generateMaterialsLocally(ch.title, content, this.currentChapterIndex);
+              ch.summary = generated.summary;
+              ch.feynman = generated.feynman;
+              ch.flashcards = generated.flashcards;
+              ch.mindmap = generated.mindmap;
+              ch.actionables = generated.actionables;
+              ch.quiz = generated.quiz;
+              this.saveToStorage();
+              this.isAIGenerating = false;
+              alert('🎉 离线智能提炼完成！');
+            }, 500);
+          } else {
+            this.showSettingsModal = true;
+          }
+          return;
+        }
+
+        // 若已配置 API Key，调用接口请求
+        this.isAIGenerating = true;
+        try {
+          const prompt = `你是一位世界顶级的掌握式学习（Mastery Learning）导师和认知专家。
+请针对以下章节标题与内容，生成一套完备的精读学习材料和考核试卷。
+请严格输出合法的 JSON 格式（不要包含任何 markdown 代码块外部文字），结构如下：
+{
+  "summary": {
+    "takeaways": [
+      {"title": "要点标题", "body": "深度讲解分析"}
+    ],
+    "quote": "精选金句箴言"
+  },
+  "feynman": {
+    "analogy": "生动生活化通俗比喻",
+    "explanation": "通俗易懂的白话讲解，消除所有行话黑话，直击本质"
+  },
+  "flashcards": [
+    {"front": "提问/核心概念", "back": "详细解答与记忆诀窍", "tag": "分类标签"}
+  ],
+  "mindmap": [
+    {"title": "核心主干", "children": ["分支论点1", "分支论点2"]}
+  ],
+  "actionables": [
+    {"action": "具体微行动", "reason": "背后的科学心理机制"}
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "type": "single",
+      "question": "题干",
+      "options": ["选项A", "选项B", "选项C", "选项D"],
+      "answer": "正确选项内容",
+      "explanation": "详尽解析"
+    },
+    {
+      "id": "q2",
+      "type": "boolean",
+      "question": "【判断是非】题干",
+      "options": ["正确", "错误"],
+      "answer": "正确或错误",
+      "explanation": "解析"
+    },
+    {
+      "id": "q3",
+      "type": "multiple",
+      "question": "题干（多选）",
+      "options": ["A", "B", "C", "D"],
+      "answer": ["A", "B"],
+      "explanation": "解析"
+    }
+  ]
+}
+
+章节标题：${ch.title}
+章节内容：
+${content.slice(0, 3000)}`;
+
+          const url = this.aiConfig.baseUrl.replace(/\/+$/, '') + '/chat/completions';
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.aiConfig.apiKey}`
+            },
+            body: JSON.stringify({
+              model: this.aiConfig.model || 'auto',
+              messages: [
+                { role: 'system', content: 'You are an AI Mastery Learning Engine that outputs only valid JSON.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.2
+            })
+          });
+
+          if (!res.ok) {
+            throw new Error(`API 请求失败: ${res.status} ${res.statusText}`);
+          }
+
+          const data = await res.json();
+          let text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+          // 清理推理模型的 <think> 标签与 markdown 代码块
+          text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+          const firstBrace = text.indexOf('{');
+          const lastBrace = text.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            text = text.slice(firstBrace, lastBrace + 1);
+          }
+          const resultObj = JSON.parse(text);
+
+          if (resultObj.summary) ch.summary = resultObj.summary;
+          if (resultObj.feynman) ch.feynman = resultObj.feynman;
+          if (resultObj.flashcards) ch.flashcards = resultObj.flashcards;
+          if (resultObj.mindmap) ch.mindmap = resultObj.mindmap;
+          if (resultObj.actionables) ch.actionables = resultObj.actionables;
+          if (resultObj.quiz) ch.quiz = resultObj.quiz;
+
+          this.saveToStorage();
+          alert('🎉 AI 深度提炼学习材料与试卷成功！已为您更新本章内容。');
+        } catch (err) {
+          console.error(err);
+          let tip = `AI 提炼失败：${err.message}。`;
+          if (location.protocol === 'https:' && this.aiConfig.baseUrl.startsWith('http:')) {
+            tip += '\n\n【注意】由于当前博客为 HTTPS 协议，浏览器可能拦截了 HTTP 接口跨域请求。您可点击设置改用离线提取引擎，或在浏览器中允许该站点访问。';
+          }
+          alert(tip);
+        } finally {
+          this.isAIGenerating = false;
+        }
+      }
+    }
+  });
+
+  const mountEl = document.getElementById('smart-study-mount');
+  if (mountEl && !mountEl.__vue_app__) {
+    const vm = app.mount('#smart-study-mount');
+    mountEl.__vue_app__ = vm;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initSmartStudy);
+document.addEventListener('pjax:complete', initSmartStudy);
+</script>
+{% endraw %}

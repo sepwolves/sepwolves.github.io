@@ -4,6 +4,7 @@ menu:
   #   Music: /music/ || fas fa-music
   #   Movie: /movies/ || fas fa-video
   小说集合: /novel-collection.html || fas fa-book
+  智学伴读: /study/ || fas fa-graduation-cap
 
 # 自定义头像和网站图标（狼头）
 avatar:
@@ -46,6 +47,7 @@ series:
 inject:
   head:
     - <link rel="stylesheet" href="/css/novel-grid.css">
+    - <link rel="stylesheet" href="/css/study-app.css">
 
 # 评论系统
 comments:
