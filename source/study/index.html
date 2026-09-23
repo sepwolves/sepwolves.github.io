@@ -36,6 +36,11 @@ top_img: false
           </option>
         </select>
 
+        <!-- 随时查阅书籍原文按钮 -->
+        <button class="study-btn study-btn-outline" @click="toggleReaderDrawer" title="在屏幕上随时查阅书籍原文">
+          <i class="fas fa-book-open"></i> 查阅原文
+        </button>
+
         <!-- 导入书籍按钮 -->
         <button class="study-btn study-btn-primary" @click="showImportModal = true">
           <i class="fas fa-file-import"></i> 导入新书
@@ -236,8 +241,16 @@ top_img: false
               <i class="fas fa-align-left"></i> 章节原文精读
             </button>
 
-            <!-- AI 智能生成/重构材料按钮 -->
-            <div style="margin-left: auto; display: flex; align-items: center;">
+            <!-- 分屏对照 & AI 智能生成/重构材料按钮 -->
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <button
+                class="study-btn study-btn-sm"
+                :class="isSplitScreen ? 'study-btn-primary' : 'study-btn-outline'"
+                @click="toggleSplitScreen"
+                title="开启/退出右侧书籍原文分屏对照研读"
+              >
+                <i class="fas fa-columns"></i> {{ isSplitScreen ? '退出分屏' : '分屏对照原文' }}
+              </button>
               <button
                 class="study-btn study-btn-sm study-btn-outline"
                 @click="triggerAIGeneration"
@@ -250,8 +263,11 @@ top_img: false
             </div>
           </nav>
 
-          <!-- 维度 1：核心要点 -->
-          <div v-if="activeMaterialTab === 'summary'">
+          <!-- 研读材料内容区（支持常规单栏 / 左右分屏对照原文） -->
+          <div :class="{ 'split-study-layout': isSplitScreen && activeMaterialTab !== 'content' }">
+            <div class="split-study-left">
+              <!-- 维度 1：核心要点 -->
+              <div v-if="activeMaterialTab === 'summary'">
             <div class="quote-highlight" v-if="currentChapter.summary && currentChapter.summary.quote">
               <i class="fas fa-quote-left" style="opacity: 0.4; margin-right: 0.4rem;"></i>
               {{ currentChapter.summary.quote }}
@@ -411,12 +427,129 @@ top_img: false
             <div v-else style="color: var(--study-text-muted); text-align: center; padding: 2rem;">
               暂无落地清单。
             </div>
+            </div>
+
+            <!-- 分屏右侧：实时书籍原文对照阅读面板 -->
+            <div class="split-study-reader-panel" v-if="isSplitScreen && activeMaterialTab !== 'content'">
+              <div class="split-reader-header">
+                <div style="font-weight: 700; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <i class="fas fa-book-open" style="color: var(--study-primary);"></i>
+                  <span>{{ currentChapter.title }} · 原文对照</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                  <div class="font-size-controls">
+                    <button class="study-btn study-btn-sm study-btn-outline" @click="decreaseFontSize" :disabled="readerFontSize <= 13">A-</button>
+                    <span style="font-size: 0.76rem; min-width: 26px; text-align: center;">{{ readerFontSize }}px</span>
+                    <button class="study-btn study-btn-sm study-btn-outline" @click="increaseFontSize" :disabled="readerFontSize >= 24">A+</button>
+                  </div>
+                  <button class="study-btn study-btn-sm study-btn-outline" @click="openReaderDrawerForChapter(currentChapterIndex)" title="展开侧边抽屉模式">
+                    <i class="fas fa-expand"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 搜索与高亮 -->
+              <div class="reader-search-bar" style="padding: 0.5rem 0.8rem;">
+                <div class="reader-search-input-wrap">
+                  <i class="fas fa-search reader-search-icon" style="left: 0.6rem;"></i>
+                  <input
+                    type="text"
+                    v-model="readerSearchQuery"
+                    placeholder="搜索本章原文关键词..."
+                    class="reader-search-input"
+                    style="padding: 0.35rem 1.6rem 0.35rem 1.8rem; font-size: 0.8rem;"
+                  />
+                  <button v-if="readerSearchQuery" class="reader-search-clear" @click="readerSearchQuery = ''">&times;</button>
+                </div>
+                <span class="reader-search-count" v-if="readerSearchQuery">
+                  {{ searchMatchCount }} 处
+                </span>
+              </div>
+
+              <div class="split-reader-body">
+                <div
+                  v-if="currentChapter.content"
+                  class="reader-content-prose"
+                  :style="{ fontSize: readerFontSize + 'px' }"
+                  v-html="renderedReaderContent"
+                ></div>
+                <div v-else class="reader-empty-state">
+                  <p>当前章节暂无原文内容</p>
+                  <button class="study-btn study-btn-sm study-btn-primary" @click="openEditContentModal">
+                    <i class="fas fa-plus"></i> 录入本章原文
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- 维度 6：原文阅读 -->
-          <div v-if="activeMaterialTab === 'content'">
-            <div style="line-height: 1.85; font-size: 0.95rem; white-space: pre-line; color: var(--study-text);">
-              {{ currentChapter.content || '暂无原文内容。' }}
+          <!-- 维度 6：原文阅读 (全宽沉浸式阅读器模式) -->
+          <div v-if="activeMaterialTab === 'content'" class="tab-reader-wrapper">
+            <div class="tab-reader-toolbar">
+              <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                <span style="font-weight: 700; font-size: 0.95rem;">
+                  <i class="fas fa-book-open" style="color: var(--study-primary);"></i> 《{{ currentBook.title }}》 · {{ currentChapter.title }}
+                </span>
+                <span style="font-size: 0.8rem; color: var(--study-text-muted);">
+                  字数：约 {{ chapterWordCount }} 字 · 预计用时 {{ Math.ceil(chapterWordCount / 400) }} 分钟
+                </span>
+              </div>
+
+              <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                <!-- 字体缩放 -->
+                <div class="font-size-controls">
+                  <button class="study-btn study-btn-sm study-btn-outline" @click="decreaseFontSize" :disabled="readerFontSize <= 13">A-</button>
+                  <span style="font-size: 0.78rem; min-width: 28px; text-align: center;">{{ readerFontSize }}px</span>
+                  <button class="study-btn study-btn-sm study-btn-outline" @click="increaseFontSize" :disabled="readerFontSize >= 24">A+</button>
+                </div>
+
+                <!-- 复制 -->
+                <button class="study-btn study-btn-sm study-btn-outline" @click="copyReaderText" title="复制本章原文">
+                  <i class="fas fa-copy"></i> 复制
+                </button>
+
+                <!-- 编辑/补充 -->
+                <button class="study-btn study-btn-sm study-btn-outline" @click="openEditContentModal" title="编辑或补充本章原文">
+                  <i class="fas fa-pen"></i> 编辑
+                </button>
+
+                <!-- 侧边抽屉展开 -->
+                <button class="study-btn study-btn-sm study-btn-outline" @click="openReaderDrawerForChapter(currentChapterIndex)" title="展开侧边抽屉查阅">
+                  <i class="fas fa-up-right-from-square"></i> 抽屉查阅
+                </button>
+              </div>
+            </div>
+
+            <!-- 搜索栏 -->
+            <div class="reader-search-bar">
+              <div class="reader-search-input-wrap">
+                <i class="fas fa-search reader-search-icon"></i>
+                <input
+                  type="text"
+                  v-model="readerSearchQuery"
+                  placeholder="在章节原文中搜索关键词并实时高亮..."
+                  class="reader-search-input"
+                />
+                <button v-if="readerSearchQuery" class="reader-search-clear" @click="readerSearchQuery = ''">&times;</button>
+              </div>
+              <div class="reader-search-count" v-if="readerSearchQuery">
+                找到 <strong>{{ searchMatchCount }}</strong> 处匹配
+              </div>
+            </div>
+
+            <div class="tab-reader-content">
+              <div
+                v-if="currentChapter.content"
+                class="reader-content-prose"
+                :style="{ fontSize: readerFontSize + 'px' }"
+                v-html="renderedReaderContent"
+              ></div>
+              <div v-else class="reader-empty-state">
+                <p>当前章节暂无原文内容</p>
+                <button class="study-btn study-btn-sm study-btn-primary" @click="openEditContentModal">
+                  <i class="fas fa-plus"></i> 录入本章原文
+                </button>
+              </div>
             </div>
           </div>
 
@@ -445,32 +578,55 @@ top_img: false
               </div>
             </div>
 
-            <!-- 题目圆点快速跳转 -->
-            <div class="quiz-nav-dots" v-if="!quizSubmitted">
-              <div
-                v-for="(q, qIdx) in quizQuestions"
-                :key="q.id"
-                class="quiz-dot"
-                :class="{
-                  active: currentQIndex === qIdx,
-                  answered: isQuestionAnswered(qIdx)
-                }"
-                @click="currentQIndex = qIdx"
+            <!-- 翻书查阅与题目圆点快速跳转 -->
+            <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+              <button
+                class="study-btn study-btn-sm study-btn-outline"
+                @click="openReaderDrawerForChapter(currentChapterIndex)"
+                title="答题遇到疑问？随时翻阅书籍原文查找线索与论据"
               >
-                {{ qIdx + 1 }}
+                <i class="fas fa-book-open" style="color: var(--study-primary);"></i> 翻书查阅原文
+              </button>
+
+              <!-- 题目圆点快速跳转 -->
+              <div class="quiz-nav-dots" v-if="!quizSubmitted">
+                <div
+                  v-for="(q, qIdx) in quizQuestions"
+                  :key="q.id"
+                  class="quiz-dot"
+                  :class="{
+                    active: currentQIndex === qIdx,
+                    answered: isQuestionAnswered(qIdx)
+                  }"
+                  @click="currentQIndex = qIdx"
+                >
+                  {{ qIdx + 1 }}
+                </div>
               </div>
             </div>
           </div>
 
           <!-- 答题卡片（未交卷状态） -->
           <div class="question-card" v-if="!quizSubmitted && currentQ">
-            <!-- 题型标签 -->
-            <div class="question-type-pill">
-              <span v-if="currentQ.type === 'single'">单项选择题</span>
-              <span v-else-if="currentQ.type === 'multiple'">多项选择题</span>
-              <span v-else-if="currentQ.type === 'boolean'">判断是非题</span>
-              <span v-else-if="currentQ.type === 'fill'">填空 / 概念匹配题</span>
-              <span v-else>情景思考题</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+              <!-- 题型标签 -->
+              <div class="question-type-pill" style="margin-bottom: 0;">
+                <span v-if="currentQ.type === 'single'">单项选择题</span>
+                <span v-else-if="currentQ.type === 'multiple'">多项选择题</span>
+                <span v-else-if="currentQ.type === 'boolean'">判断是非题</span>
+                <span v-else-if="currentQ.type === 'fill'">填空 / 概念匹配题</span>
+                <span v-else>情景思考题</span>
+              </div>
+
+              <!-- 题目右侧随时翻书查阅快捷入口 -->
+              <button
+                class="study-btn study-btn-sm study-btn-outline"
+                @click="openReaderWithSearch(currentQ.question)"
+                style="font-size: 0.78rem; padding: 0.25rem 0.6rem;"
+                title="查阅当前题目涉及的书籍章节原文"
+              >
+                <i class="fas fa-search" style="color: var(--study-primary);"></i> 翻书查阅原文
+              </button>
             </div>
 
             <!-- 题目文本 -->
@@ -636,6 +792,16 @@ top_img: false
                   <div style="background: var(--study-card-bg); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--study-border);">
                     <strong style="color: var(--study-primary);"><i class="fas fa-lightbulb"></i> 考点解析：</strong>
                     {{ analysis.explanation }}
+                  </div>
+                  <div style="margin-top: 0.6rem; display: flex; justify-content: flex-end;">
+                    <button
+                      class="study-btn study-btn-sm study-btn-outline"
+                      @click="openReaderWithSearch(analysis.question)"
+                      style="font-size: 0.78rem;"
+                      title="打开书籍原文并自动高亮本题关键点"
+                    >
+                      <i class="fas fa-book-open" style="color: var(--study-primary);"></i> 溯源查阅本题原文出处
+                    </button>
                   </div>
                 </div>
               </div>
@@ -803,6 +969,187 @@ top_img: false
         </div>
       </div>
     </div>
+
+    <!-- ======================= 全局悬浮“书籍原文”查阅入口 ======================= -->
+    <div
+      class="floating-reader-btn"
+      @click="toggleReaderDrawer"
+      :class="{ active: showReaderDrawer }"
+      title="随时在屏幕上查阅书籍原文"
+    >
+      <i class="fas fa-book-open"></i>
+      <span class="fab-text">书籍原文</span>
+      <span class="fab-badge" v-if="currentChapter && currentChapter.title">{{ currentChapterIndex + 1 }}</span>
+    </div>
+
+    <!-- ======================= 原文阅读抽屉 (Slide-over Reader Drawer) ======================= -->
+    <div
+      class="reader-drawer-overlay"
+      v-if="showReaderDrawer && !isDrawerPinned"
+      @click="showReaderDrawer = false"
+    ></div>
+
+    <aside
+      class="reader-drawer"
+      :class="{
+        'is-open': showReaderDrawer,
+        'is-pinned': isDrawerPinned
+      }"
+    >
+      <!-- 抽屉头部控制栏 -->
+      <div class="reader-drawer-header">
+        <div class="reader-header-left">
+          <span class="reader-badge">
+            <i class="fas fa-book-bookmark"></i> 原文查阅
+          </span>
+          <select
+            class="reader-chapter-select"
+            v-model="readerChapterIndex"
+            @change="onReaderChapterChange"
+          >
+            <option
+              v-for="(ch, idx) in currentBook.chapters"
+              :key="ch.id"
+              :value="idx"
+            >
+              {{ ch.title }}
+            </option>
+          </select>
+        </div>
+
+        <div class="reader-header-actions">
+          <!-- 字体大小缩放 -->
+          <div class="font-size-controls" title="调整字号">
+            <button class="study-btn study-btn-sm study-btn-outline" @click="decreaseFontSize" :disabled="readerFontSize <= 13">A-</button>
+            <span style="font-size: 0.78rem; min-width: 28px; text-align: center;">{{ readerFontSize }}px</span>
+            <button class="study-btn study-btn-sm study-btn-outline" @click="increaseFontSize" :disabled="readerFontSize >= 24">A+</button>
+          </div>
+
+          <!-- 钉住/分屏切换 -->
+          <button
+            class="study-btn study-btn-sm"
+            :class="isDrawerPinned ? 'study-btn-primary' : 'study-btn-outline'"
+            @click="isDrawerPinned = !isDrawerPinned"
+            :title="isDrawerPinned ? '取消固定（恢复遮罩抽屉）' : '固定在侧边（无遮罩，可与答题/研读无阻交互）'"
+          >
+            <i class="fas fa-thumbtack"></i>
+          </button>
+
+          <!-- 关闭抽屉 -->
+          <button class="study-modal-close" @click="showReaderDrawer = false" title="关闭原文">&times;</button>
+        </div>
+      </div>
+
+      <!-- 搜索栏与关键词高亮 -->
+      <div class="reader-search-bar">
+        <div class="reader-search-input-wrap">
+          <i class="fas fa-search reader-search-icon"></i>
+          <input
+            type="text"
+            v-model="readerSearchQuery"
+            placeholder="搜索当前章节原文关键词并高亮..."
+            class="reader-search-input"
+          />
+          <button
+            v-if="readerSearchQuery"
+            class="reader-search-clear"
+            @click="readerSearchQuery = ''"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="reader-search-count" v-if="readerSearchQuery">
+          找到 <strong>{{ searchMatchCount }}</strong> 处匹配
+        </div>
+      </div>
+
+      <!-- 原文主体内容区 -->
+      <div class="reader-drawer-body" ref="readerBody">
+        <div class="reader-article-meta">
+          <h2 class="reader-chapter-title">{{ activeReaderChapter.title }}</h2>
+          <div class="reader-meta-info">
+            <span><i class="fas fa-book"></i> {{ currentBook.title }}</span>
+            <span><i class="fas fa-font"></i> 约 {{ chapterWordCount }} 字</span>
+            <span><i class="fas fa-clock"></i> 预计阅读 {{ Math.ceil(chapterWordCount / 400) }} 分钟</span>
+          </div>
+        </div>
+
+        <!-- 原文正文渲染（支持高亮与分段） -->
+        <div
+          v-if="activeReaderChapter.content"
+          class="reader-content-prose"
+          :style="{ fontSize: readerFontSize + 'px' }"
+          v-html="renderedReaderContent"
+        ></div>
+
+        <!-- 空内容兜底与手动补充 -->
+        <div v-else class="reader-empty-state">
+          <i class="fas fa-file-circle-question" style="font-size: 2.5rem; color: var(--study-text-muted); margin-bottom: 0.8rem;"></i>
+          <p>当前章节暂未录入书籍原文文本。</p>
+          <button class="study-btn study-btn-primary study-btn-sm" @click="openEditContentModal">
+            <i class="fas fa-pen-to-square"></i> 录入/粘贴本章原文
+          </button>
+        </div>
+      </div>
+
+      <!-- 抽屉底部导航 -->
+      <div class="reader-drawer-footer">
+        <button
+          class="study-btn study-btn-sm study-btn-outline"
+          :disabled="readerChapterIndex === 0"
+          @click="readerChapterIndex--"
+        >
+          <i class="fas fa-chevron-left"></i> 上一章
+        </button>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="study-btn study-btn-sm study-btn-outline" @click="copyReaderText" title="复制本章原文">
+            <i class="fas fa-copy"></i> 复制原文
+          </button>
+          <button class="study-btn study-btn-sm study-btn-outline" @click="openEditContentModal" title="编辑本章原文">
+            <i class="fas fa-pen"></i> 编辑
+          </button>
+          <button class="study-btn study-btn-sm study-btn-outline" @click="scrollReaderToTop" title="回到顶部">
+            <i class="fas fa-arrow-up"></i>
+          </button>
+        </div>
+
+        <button
+          class="study-btn study-btn-sm study-btn-outline"
+          :disabled="readerChapterIndex === currentBook.chapters.length - 1"
+          @click="readerChapterIndex++"
+        >
+          下一章 <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ======================= 弹窗 3：编辑/补充章节原文 ======================= -->
+    <div class="study-modal-backdrop" v-if="showEditContentModal" @click.self="showEditContentModal = false">
+      <div class="study-modal">
+        <div class="study-modal-header">
+          <h3 class="study-modal-title"><i class="fas fa-file-pen"></i> 编辑章节书籍原文</h3>
+          <button class="study-modal-close" @click="showEditContentModal = false">&times;</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="font-size: 0.88rem; color: var(--study-text-muted);">
+            当前章节：<strong>{{ activeReaderChapter.title }}</strong>
+          </div>
+          <textarea
+            v-model="editingContentText"
+            rows="12"
+            placeholder="请在此粘贴或编辑该章节的书籍原文文本..."
+            style="width: 100%; box-sizing: border-box; padding: 0.8rem; border: 1px solid var(--study-border); border-radius: 6px; background: var(--study-bg); color: var(--study-text); font-size: 0.9rem; line-height: 1.6;"
+          ></textarea>
+          <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+            <button class="study-btn study-btn-outline" @click="showEditContentModal = false">取消</button>
+            <button class="study-btn study-btn-primary" @click="saveChapterContent">
+              <i class="fas fa-save"></i> 保存原文
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -826,6 +1173,21 @@ function initSmartStudy() {
     }
   } catch (e) {
     console.error('加载本地进度失败', e);
+  }
+
+  // 同步补齐默认书籍的章节原文（如果本地存储缺少或被清空）
+  if (window.SmartBookApp && window.SmartBookApp.DEFAULT_BOOKS) {
+    window.SmartBookApp.DEFAULT_BOOKS.forEach(defBook => {
+      const targetBook = initialBooks.find(b => b.id === defBook.id);
+      if (targetBook && targetBook.chapters) {
+        defBook.chapters.forEach(defCh => {
+          const targetCh = targetBook.chapters.find(c => c.id === defCh.id);
+          if (targetCh && (!targetCh.content || targetCh.content.length < 50)) {
+            targetCh.content = defCh.content;
+          }
+        });
+      }
+    });
   }
 
   // 默认使用用户的 API 端点与 Key
@@ -881,6 +1243,16 @@ function initSmartStudy() {
           analyses: []
         },
 
+        // 书籍原文查阅与分屏阅读状态
+        showReaderDrawer: false,
+        isDrawerPinned: false,
+        isSplitScreen: false,
+        readerChapterIndex: 0,
+        readerSearchQuery: '',
+        readerFontSize: 16,
+        showEditContentModal: false,
+        editingContentText: '',
+
         // 设置与弹窗
         showImportModal: false,
         showSettingsModal: false,
@@ -906,6 +1278,39 @@ function initSmartStudy() {
           return {};
         }
         return this.currentBook.chapters[this.currentChapterIndex] || this.currentBook.chapters[0];
+      },
+      activeReaderChapter() {
+        if (!this.currentBook.chapters || !this.currentBook.chapters.length) return {};
+        return this.currentBook.chapters[this.readerChapterIndex] || this.currentChapter || {};
+      },
+      renderedReaderContent() {
+        const text = this.activeReaderChapter.content || this.currentChapter.content || '';
+        if (!text) return '';
+        const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (!this.readerSearchQuery || !this.readerSearchQuery.trim()) {
+          return text.split('\n\n').map(p => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`).join('');
+        }
+        const q = this.readerSearchQuery.trim();
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp(`(${escapedQ})`, 'gi');
+        return text.split('\n\n').map(p => {
+          const escapedP = escapeHtml(p);
+          const highlighted = escapedP.replace(reg, '<mark class="reader-highlight">$1</mark>');
+          return `<p>${highlighted.replace(/\n/g, '<br>')}</p>`;
+        }).join('');
+      },
+      searchMatchCount() {
+        const text = this.activeReaderChapter.content || this.currentChapter.content || '';
+        const q = this.readerSearchQuery ? this.readerSearchQuery.trim() : '';
+        if (!text || !q) return 0;
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp(escapedQ, 'gi');
+        const matches = text.match(reg);
+        return matches ? matches.length : 0;
+      },
+      chapterWordCount() {
+        const text = this.activeReaderChapter.content || this.currentChapter.content || '';
+        return text.replace(/\s+/g, '').length;
       },
       passedChaptersCount() {
         if (!this.currentBook.chapters) return 0;
@@ -937,6 +1342,8 @@ function initSmartStudy() {
       switchBook(bookId) {
         this.currentBookId = bookId;
         this.currentChapterIndex = 0;
+        this.readerChapterIndex = 0;
+        this.readerSearchQuery = '';
         this.resetQuizState();
         this.resetCardState();
         this.resetTimer();
@@ -951,10 +1358,84 @@ function initSmartStudy() {
           return;
         }
         this.currentChapterIndex = idx;
+        this.readerChapterIndex = idx;
         this.resetQuizState();
         this.resetCardState();
         this.resetTimer();
         this.currentMode = 'study';
+      },
+      // ================= 原文查阅与分屏阅读方法 =================
+      toggleReaderDrawer() {
+        this.readerChapterIndex = this.currentChapterIndex;
+        this.showReaderDrawer = !this.showReaderDrawer;
+      },
+      openReaderDrawerForChapter(idx) {
+        this.readerChapterIndex = idx !== undefined ? idx : this.currentChapterIndex;
+        this.showReaderDrawer = true;
+      },
+      openReaderWithSearch(searchKeyword) {
+        this.readerChapterIndex = this.currentChapterIndex;
+        this.showReaderDrawer = true;
+        if (searchKeyword) {
+          const cleanWord = searchKeyword.replace(/[【】《》（）()、，。？！\s]/g, ' ').trim().split(/\s+/)[0];
+          this.readerSearchQuery = cleanWord ? cleanWord.slice(0, 10) : '';
+        }
+        this.$nextTick(() => {
+          this.scrollReaderToMatch();
+        });
+      },
+      scrollReaderToMatch() {
+        if (this.$refs.readerBody) {
+          const markEl = this.$refs.readerBody.querySelector('mark');
+          if (markEl) {
+            markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      },
+      onReaderChapterChange() {
+        this.$nextTick(() => {
+          this.scrollReaderToTop();
+        });
+      },
+      increaseFontSize() {
+        if (this.readerFontSize < 24) this.readerFontSize += 2;
+      },
+      decreaseFontSize() {
+        if (this.readerFontSize > 13) this.readerFontSize -= 2;
+      },
+      toggleSplitScreen() {
+        this.isSplitScreen = !this.isSplitScreen;
+      },
+      scrollReaderToTop() {
+        if (this.$refs.readerBody) {
+          this.$refs.readerBody.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      },
+      copyReaderText() {
+        const text = this.activeReaderChapter.content || this.currentChapter.content;
+        if (!text) return;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => {
+            alert('已成功复制当前章节原文到剪贴板！');
+          });
+        } else {
+          alert('复制失败，请手动选取文字复制。');
+        }
+      },
+      openEditContentModal() {
+        this.editingContentText = this.activeReaderChapter.content || this.currentChapter.content || '';
+        this.showEditContentModal = true;
+      },
+      saveChapterContent() {
+        if (this.activeReaderChapter) {
+          this.activeReaderChapter.content = this.editingContentText;
+        }
+        if (this.currentChapter && this.readerChapterIndex === this.currentChapterIndex) {
+          this.currentChapter.content = this.editingContentText;
+        }
+        this.saveToStorage();
+        this.showEditContentModal = false;
+        alert('章节原文已成功更新！');
       },
       // 计时器控制
       toggleTimer() {

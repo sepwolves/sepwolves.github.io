@@ -1070,3 +1070,367 @@
   cursor: pointer;
   color: var(--study-text-muted);
 }
+
+/* ==========================================================================
+   书籍原文查阅体系 (Original Book Reader & Split Screen System)
+   ========================================================================== */
+
+/* 全局右下角悬浮“书籍原文”入口按钮 */
+.floating-reader-btn {
+  position: fixed;
+  bottom: 85px;
+  right: 25px;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  background: linear-gradient(135deg, var(--study-primary), #7c3aed);
+  color: #ffffff !important;
+  border-radius: 9999px;
+  box-shadow: 0 4px 18px rgba(var(--study-primary-rgb), 0.38);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.88rem;
+  font-weight: 600;
+  user-select: none;
+}
+.floating-reader-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 24px rgba(var(--study-primary-rgb), 0.5);
+}
+.floating-reader-btn.active {
+  box-shadow: 0 0 0 3px rgba(var(--study-primary-rgb), 0.3), 0 6px 20px rgba(0,0,0,0.25);
+}
+.floating-reader-btn .fab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* 原文抽屉背景遮罩 */
+.reader-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 1040;
+  animation: fadeIn 0.25s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 原文抽屉主体 (Slide-over Drawer) */
+.reader-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 580px;
+  max-width: 92vw;
+  height: 100vh;
+  background: var(--study-card-bg);
+  border-left: 1px solid var(--study-border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.16);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.reader-drawer.is-open {
+  transform: translateX(0);
+}
+
+.reader-drawer.is-pinned {
+  z-index: 990;
+  box-shadow: -4px 0 18px rgba(0, 0, 0, 0.08);
+}
+
+/* 抽屉头部控制栏 */
+.reader-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--study-border);
+  background: var(--study-card-bg);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.reader-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.reader-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--study-primary-light);
+  color: var(--study-primary);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reader-chapter-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  background: var(--study-bg);
+  color: var(--study-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.reader-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: var(--study-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  padding: 2px 5px;
+}
+
+/* 搜索栏与关键词高亮控制 */
+.reader-search-bar {
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--study-border);
+  background: var(--study-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.reader-search-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.reader-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--study-text-muted);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.reader-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 2rem 0.45rem 2.1rem;
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-sm);
+  background: var(--study-card-bg);
+  color: var(--study-text);
+  font-size: 0.84rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.reader-search-input:focus {
+  border-color: var(--study-primary);
+}
+
+.reader-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--study-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.reader-search-count {
+  font-size: 0.78rem;
+  color: var(--study-text-muted);
+  white-space: nowrap;
+}
+
+/* 原文主体排版 */
+.reader-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem;
+  line-height: 1.9;
+  background: var(--study-card-bg);
+}
+
+.reader-article-meta {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--study-border);
+}
+
+.reader-chapter-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--study-text);
+  line-height: 1.4;
+}
+
+.reader-meta-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--study-text-muted);
+  flex-wrap: wrap;
+}
+
+.reader-content-prose {
+  color: var(--study-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.reader-content-prose p {
+  margin-bottom: 1.25rem;
+  text-indent: 2em;
+  text-align: justify;
+}
+
+mark.reader-highlight {
+  background: #fef08a;
+  color: #854d0e;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px #eab308;
+}
+
+[data-theme="dark"] mark.reader-highlight {
+  background: #854d0e;
+  color: #fef08a;
+  box-shadow: 0 0 0 1px #ca8a04;
+}
+
+.reader-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--study-text-muted);
+}
+
+/* 抽屉底部操作栏 */
+.reader-drawer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--study-border);
+  background: var(--study-card-bg);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+/* 双栏分屏对照研读布局 (Split-screen Reading Layout) */
+.split-study-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .split-study-layout {
+    grid-template-columns: 1fr;
+  }
+  .reader-drawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  .floating-reader-btn {
+    bottom: 70px;
+    right: 15px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.82rem;
+  }
+}
+
+.split-study-reader-panel {
+  background: var(--study-card-bg);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  max-height: 720px;
+  overflow: hidden;
+}
+
+.split-reader-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--study-border);
+  background: var(--study-bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.split-reader-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.2rem;
+  line-height: 1.85;
+}
+
+/* 原文精读 Tab 增强 */
+.tab-reader-wrapper {
+  background: var(--study-bg);
+  border-radius: var(--study-radius-md);
+  border: 1px solid var(--study-border);
+  overflow: hidden;
+}
+
+.tab-reader-toolbar {
+  padding: 0.75rem 1.25rem;
+  background: var(--study-card-bg);
+  border-bottom: 1px solid var(--study-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.tab-reader-content {
+  padding: 1.8rem;
+  background: var(--study-card-bg);
+  max-height: 650px;
+  overflow-y: auto;
+}
