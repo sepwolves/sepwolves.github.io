@@ -612,6 +612,11 @@
             <label class="block font-semibold text-slate-700 mb-1">🤖 FreeLLMAPI 接口地址</label>
             <input v-model="config.apiBaseUrl" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
           </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">🚫 学习库忽略文件夹 (逗号分隔)</label>
+            <input v-model="ignoreFoldersInput" type="text" placeholder="如: _指令集, copilot, Clippings, 使用手册" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
+            <p class="text-[11px] text-slate-400 mt-1">默认自动过滤系统配置与辅助插件文件夹（保留 _当前学习）</p>
+          </div>
         </div>
 
         <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
@@ -642,6 +647,7 @@
         const showSettings = ref(false);
         const showScoreModal = ref(false);
         const toastMessage = ref('');
+        const ignoreFoldersInput = ref('Excalidraw, _debug_remotely_save, _指令集, _templates, _script, copilot, Clippings, 使用手册');
 
         const config = ref({
           ebookDir: 'D:\\OneDrive - SkyMan\\个人文件\\我的文档\\我的电子书',
@@ -697,12 +703,22 @@
           try {
             const res = await fetch('/api/config');
             const data = await res.json();
-            if (data.config) config.value = { ...config.value, ...data.config };
+            if (data.config) {
+              config.value = { ...config.value, ...data.config };
+              if (data.config.studyIgnoreFolders && Array.isArray(data.config.studyIgnoreFolders)) {
+                ignoreFoldersInput.value = data.config.studyIgnoreFolders.join(', ');
+              }
+            }
           } catch(e) {}
         };
 
         const saveSettings = async () => {
           try {
+            config.value.studyIgnoreFolders = ignoreFoldersInput.value
+              .split(',')
+              .map(s => s.trim())
+              .filter(Boolean);
+
             await fetch('/api/config', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1184,6 +1200,7 @@
           showScoreModal,
           scoreHistory,
           config,
+          ignoreFoldersInput,
           saveSettings,
           toastMessage,
           switchWorkspace,

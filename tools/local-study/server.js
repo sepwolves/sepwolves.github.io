@@ -21,7 +21,8 @@ let config = {
   studyVault: 'D:\\Remotely-save\\学习\\学习库',
   apiBaseUrl: 'http://140.245.65.111:3005/v1',
   apiKey: 'freellmapi-5970cc45963020cb59754a87d5fd0fd7d3b8f373c8c19bed',
-  model: 'auto'
+  model: 'auto',
+  studyIgnoreFolders: ['Excalidraw', '_debug_remotely_save', '_指令集', '_templates', '_script', 'copilot', 'Clippings', '使用手册']
 };
 
 // 加载本地配置
@@ -98,9 +99,18 @@ function scanStudyTopics(vaultDir) {
     '傅利叶变换': { name: '信号与傅利叶变换', icon: '〰️', order: 10 }
   };
 
+  const defaultIgnore = ['Excalidraw', '_debug_remotely_save', '_指令集', '_templates', '_script', 'copilot', 'Clippings', '使用手册'];
+  const ignoreList = Array.isArray(config.studyIgnoreFolders) ? config.studyIgnoreFolders : defaultIgnore;
+
   try {
     const rootDirs = fs.readdirSync(vaultDir, { withFileTypes: true })
-      .filter(d => d.isDirectory() && !d.name.startsWith('.') && d.name !== 'Excalidraw' && d.name !== '_debug_remotely_save');
+      .filter(d => {
+        if (!d.isDirectory()) return false;
+        if (d.name.startsWith('.')) return false;
+        if (ignoreList.includes(d.name)) return false;
+        if (d.name.startsWith('_') && d.name !== '_当前学习') return false;
+        return true;
+      });
 
     for (const d of rootDirs) {
       const folderName = d.name;
