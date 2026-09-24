@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智学伴读 · 本地直读工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    [v-cloak] { display: none; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
+    .slide-enter-from { opacity: 0; transform: translateX(30px); }
+    .slide-leave-to { opacity: 0; transform: translateX(-30px); }
+    .reading-content { line-height: 1.85; font-size: 1.125rem; }
+    .reading-content p { margin-bottom: 1.25rem; text-indent: 2em; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+  <div id="app" v-cloak class="flex flex-col min-h-screen">
+
+    <!-- 顶部主导航 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3 cursor-pointer" @click="currentView = 'bookshelf'">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-100">
+            智
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-lg text-slate-900 tracking-tight">智学伴读</span>
+              <span class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">本地直读版</span>
+            </div>
+            <p class="text-xs text-slate-500 truncate max-w-xs sm:max-w-md">源: {{ config.ebookDir }}</p>
+          </div>
+        </div>
+
+        <!-- 导航与快捷操作 -->
+        <div class="flex items-center space-x-3">
+          <button 
+            @click="currentView = 'bookshelf'"
+            :class="currentView === 'bookshelf' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'"
+            class="px-3.5 py-1.5 rounded-lg text-sm transition-colors flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            <span>本地书架 ({{ books.length }})</span>
+          </button>
+
+          <button 
+            v-if="currentBook"
+            @click="currentView = 'reader'"
+            :class="currentView === 'reader' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'"
+            class="px-3.5 py-1.5 rounded-lg text-sm transition-colors flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            <span class="max-w-[120px] truncate">正在读: {{ currentBook.name }}</span>
+          </button>
+
+          <button 
+            @click="showSettings = true"
+            class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            title="设置">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 视图 1：本地书架 (Bookshelf) -->
+    <main v-if="currentView === 'bookshelf'" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- 搜索与筛选器 -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-8 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="relative flex-1">
+            <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="搜索书名、作者或文件夹..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="loadBooks" 
+              :disabled="isLoadingBooks"
+              class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors flex items-center space-x-1.5">
+              <svg :class="{'animate-spin': isLoadingBooks}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span>刷新书库</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 分类与格式 Tags -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+          <span class="text-slate-400 font-medium">格式:</span>
+          <button 
+            @click="selectedExt = ''"
+            :class="selectedExt === '' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+            class="px-2.5 py-1 rounded-lg transition-colors">全部 ({{ books.length }})</button>
+          <button 
+            v-for="ext in availableExts" :key="ext"
+            @click="selectedExt = ext"
+            :class="selectedExt === ext ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+            class="px-2.5 py-1 rounded-lg uppercase transition-colors">{{ ext }} ({{ getExtCount(ext) }})</button>
+        </div>
+      </div>
+
+      <!-- 加载中提示 -->
+      <div v-if="isLoadingBooks" class="py-24 text-center">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+        <p class="text-slate-500 font-medium">正在秒级扫描 OneDrive 电子书目录...</p>
+      </div>
+
+      <!-- 书籍卡片网格 -->
+      <div v-else-if="filteredBooks.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div 
+          v-for="book in filteredBooks" :key="book.fullPath"
+          class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:border-indigo-300 transition-all flex flex-col justify-between group">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <span class="px-2 py-0.5 text-[11px] font-bold uppercase rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100">
+                {{ book.ext }}
+              </span>
+              <span class="text-xs text-slate-400 truncate max-w-[120px]" :title="book.folder">
+                📁 {{ book.folder }}
+              </span>
+            </div>
+
+            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors mb-2" :title="book.name">
+              {{ book.name }}
+            </h3>
+            
+            <p class="text-xs text-slate-400 mb-4">
+              大小: {{ formatFileSize(book.size) }}
+            </p>
+          </div>
+
+          <!-- 双行动区：Slide 先行导读 vs 开始阅读 -->
+          <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
+            <button 
+              @click="openSlideDeck(book)"
+              class="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-semibold rounded-xl shadow-sm shadow-orange-100 transition-all flex items-center justify-center space-x-1">
+              <span>📑 智能导读 Slide</span>
+            </button>
+
+            <button 
+              @click="openReader(book)"
+              class="flex-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition-colors flex items-center justify-center space-x-1">
+              <span>📖 精读伴读</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 无搜索结果 -->
+      <div v-else class="py-20 text-center bg-white rounded-2xl border border-slate-200">
+        <p class="text-slate-400 text-base">未找到匹配的图书</p>
+      </div>
+    </main>
+
+    <!-- 视图 2：沉浸式阅读器与原文伴读 (Reader) -->
+    <main v-if="currentView === 'reader'" class="flex-1 flex overflow-hidden">
+      <!-- 左侧章节导航目录 -->
+      <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-[calc(100vh-4rem)]">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="truncate">
+            <h2 class="font-bold text-slate-900 text-sm truncate" :title="currentBook?.name">{{ currentBook?.name }}</h2>
+            <p class="text-xs text-slate-400">共 {{ parsedChapters.length }} 章</p>
+          </div>
+          <button 
+            @click="openSlideDeck(currentBook)" 
+            class="text-xs text-orange-600 hover:text-orange-700 font-semibold px-2 py-1 bg-orange-50 rounded-lg">
+            📑 导读
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+          <button 
+            v-for="(chap, idx) in parsedChapters" :key="idx"
+            @click="selectChapter(idx)"
+            :class="currentChapterIndex === idx ? 'bg-indigo-50 text-indigo-700 font-semibold border-indigo-200' : 'text-slate-600 hover:bg-slate-50 border-transparent'"
+            class="w-full text-left px-3 py-2.5 rounded-xl text-xs border transition-all truncate block">
+            {{ chap.title }}
+          </button>
+        </div>
+      </aside>
+
+      <!-- 中间正文阅读区域 -->
+      <section class="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-white overflow-y-auto relative">
+        <!-- 章节工具条 -->
+        <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-10">
+          <h1 class="font-bold text-slate-900 text-base truncate max-w-xl">
+            {{ currentChapter?.title }}
+          </h1>
+
+          <div class="flex items-center space-x-3">
+            <!-- 切换模式：伴读写入读后库 vs 智学写入学习库 -->
+            <div class="bg-slate-100 p-0.5 rounded-xl flex items-center text-xs">
+              <button 
+                @click="studyMode = 'reading'"
+                :class="studyMode === 'reading' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-500'"
+                class="px-2.5 py-1 rounded-lg transition-all">📖 伴读模式 (读后库)</button>
+              <button 
+                @click="studyMode = 'study'"
+                :class="studyMode === 'study' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-500'"
+                class="px-2.5 py-1 rounded-lg transition-all">🎓 智学模式 (学习库)</button>
+            </div>
+
+            <!-- 原文抽屉开关 -->
+            <button 
+              @click="showOriginalDrawer = !showOriginalDrawer"
+              :class="showOriginalDrawer ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1">
+              <span>📜 原文抽屉</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 正文与交互卡片 -->
+        <div class="max-w-3xl mx-auto w-full px-6 py-10 flex-1 space-y-8">
+          <!-- 划线提示悬浮条（选中文字时弹出） -->
+          <div 
+            v-if="selectedText" 
+            class="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl flex items-center space-x-3 sticky top-16 z-20 animate-fade-in">
+            <span class="text-xs truncate max-w-xs text-slate-300">“{{ selectedText }}”</span>
+            <button @click="askFeynman" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-lg font-medium">💡 大白话拆解</button>
+            <button @click="saveSelectionToObsidian" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-lg font-medium">📝 存入 Obsidian</button>
+            <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
+          </div>
+
+          <!-- AI 大白话回复卡片 -->
+          <div v-if="feynmanAnswer" class="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 rounded-2xl p-5 relative shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-indigo-700 flex items-center space-x-1">
+                <span>💡 费曼大白话拆解</span>
+              </span>
+              <button @click="feynmanAnswer = ''" class="text-slate-400 hover:text-slate-600 text-xs">✕ 关闭</button>
+            </div>
+            <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{{ feynmanAnswer }}</div>
+          </div>
+
+          <!-- 章节正文 -->
+          <div class="reading-content text-slate-800 font-serif" @mouseup="handleTextSelect">
+            <p v-for="(p, pIdx) in chapterParagraphs" :key="pIdx">{{ p }}</p>
+          </div>
+
+          <!-- 本章智能测验与读后感沉淀 -->
+          <div class="pt-8 border-t border-slate-200 space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base">🧠 本章智能测验与反思</h3>
+                <p class="text-xs text-slate-500">检验是否真正读懂，告别“假装读过”</p>
+              </div>
+              <button 
+                @click="generateChapterQuiz"
+                :disabled="isGeneratingQuiz"
+                class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+                <svg :class="{'animate-spin': isGeneratingQuiz}" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>{{ isGeneratingQuiz ? 'AI 正在出题...' : '生成本章测验 ➔' }}</span>
+              </button>
+            </div>
+
+            <!-- 测验题展示 -->
+            <div v-if="quizResult" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+              <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{{ quizResult }}</div>
+              <div class="pt-3 border-t border-slate-200 flex justify-end">
+                <button 
+                  @click="saveQuizToObsidian" 
+                  class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">
+                  📌 将测验错题存入 Obsidian
+                </button>
+              </div>
+            </div>
+
+            <!-- 章节翻页 -->
+            <div class="flex items-center justify-between pt-6 border-t border-slate-100">
+              <button 
+                @click="selectChapter(currentChapterIndex - 1)" 
+                :disabled="currentChapterIndex <= 0"
+                class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                ◀ 上一章
+              </button>
+              <span class="text-xs text-slate-400">第 {{ currentChapterIndex + 1 }} / {{ parsedChapters.length }} 章</span>
+              <button 
+                @click="selectChapter(currentChapterIndex + 1)" 
+                :disabled="currentChapterIndex >= parsedChapters.length - 1"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40">
+                下一章 ▶
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧：可收起的原文抽屉 (Original Text Drawer) -->
+      <aside 
+        v-if="showOriginalDrawer" 
+        class="w-96 bg-amber-50/50 border-l border-amber-200 flex flex-col h-[calc(100vh-4rem)] animate-slide-left z-20">
+        <div class="p-4 border-b border-amber-200/80 bg-amber-100/50 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-amber-950 text-sm">📜 原文抽屉 (对照参考)</span>
+          </div>
+          <button @click="showOriginalDrawer = false" class="text-amber-800 hover:text-amber-950 text-xs">✕ 收起</button>
+        </div>
+        <div class="p-4 overflow-y-auto flex-1 text-xs text-amber-900 leading-relaxed font-serif space-y-3">
+          <p v-for="(p, i) in chapterParagraphs" :key="i" class="indent-4">{{ p }}</p>
+        </div>
+      </aside>
+    </main>
+
+    <!-- 🌟 全局模态框：先行导读 Slide 幻灯片秀 (Advance Organizer Slide Deck) -->
+    <div v-if="showSlideModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- 幻灯片顶部 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+            <span class="font-bold text-slate-800 text-sm">先行导读 Slide · {{ currentSlideBook?.name }}</span>
+            <span v-if="slides.length > 0" class="text-xs text-slate-400">({{ currentSlideIndex + 1 }} / {{ slides.length }})</span>
+          </div>
+          <button @click="showSlideModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕ 关闭</button>
+        </div>
+
+        <!-- 幻灯片主体内容 -->
+        <div class="flex-1 p-8 overflow-y-auto flex items-center justify-center min-h-[400px]">
+          <!-- 生成中状态 -->
+          <div v-if="isLoadingSlides" class="text-center space-y-4">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
+            <p class="font-bold text-slate-800 text-base">FreeLLMAPI 正在研读全书框架与样章...</p>
+            <p class="text-xs text-slate-400">正在提炼：灵魂一句话、知识全景脉络、核心矛盾与思考题</p>
+          </div>
+
+          <!-- 幻灯片卡片展示 -->
+          <div v-else-if="currentSlide" class="w-full max-w-2xl space-y-6 animate-fade-in">
+            <div class="flex items-center justify-between">
+              <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-bold rounded-full">
+                {{ currentSlide.tag || '导读精粹' }}
+              </span>
+              <span class="text-xs text-slate-400 font-mono">Slide #{{ currentSlideIndex + 1 }}</span>
+            </div>
+
+            <div>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-2">
+                {{ currentSlide.title }}
+              </h2>
+              <p v-if="currentSlide.subtitle" class="text-slate-500 text-sm font-medium">
+                {{ currentSlide.subtitle }}
+              </p>
+            </div>
+
+            <!-- 要点清单 -->
+            <div v-if="currentSlide.bullets && currentSlide.bullets.length > 0" class="space-y-3 pt-2">
+              <div 
+                v-for="(b, bIdx) in currentSlide.bullets" :key="bIdx"
+                class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800 text-sm leading-relaxed flex items-start space-x-3">
+                <span class="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{{ bIdx + 1 }}</span>
+                <span>{{ b }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 幻灯片底部翻页与行动区 -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="prevSlide" 
+              :disabled="currentSlideIndex <= 0"
+              class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40">
+              ◀ 上一页 (←)
+            </button>
+            <button 
+              @click="nextSlide" 
+              :disabled="currentSlideIndex >= slides.length - 1"
+              class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40">
+              下一页 (→) ▶
+            </button>
+          </div>
+
+          <!-- 指示点 -->
+          <div class="hidden sm:flex items-center space-x-1.5">
+            <span 
+              v-for="(_, idx) in slides" :key="idx"
+              @click="currentSlideIndex = idx"
+              :class="currentSlideIndex === idx ? 'w-6 bg-orange-500' : 'w-2 bg-slate-300 hover:bg-slate-400'"
+              class="h-2 rounded-full cursor-pointer transition-all"></span>
+          </div>
+
+          <!-- 导出与进入正文行动 -->
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="saveSlidesToObsidian" 
+              class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+              📌 存入 Obsidian
+            </button>
+            <button 
+              @click="startReadingFromSlide"
+              class="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-100 transition-all flex items-center space-x-1">
+              <span>进入正文精读 ➔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置模态框 (Settings Modal) -->
+    <div v-if="showSettings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-lg rounded-3xl shadow-xl p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-slate-900 text-base">⚙️ 工作台设置</h3>
+          <button @click="showSettings = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">📚 电子书库路径 (OneDrive)</label>
+            <input v-model="config.ebookDir" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">📖 Obsidian 读后库路径</label>
+            <input v-model="config.readingVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">🎓 Obsidian 学习库路径</label>
+            <input v-model="config.studyVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">🤖 FreeLLMAPI 接口地址</label>
+            <input v-model="config.apiBaseUrl" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">🔑 FreeLLMAPI Key</label>
+            <input v-model="config.apiKey" type="password" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button @click="showSettings = false" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold">取消</button>
+          <button @click="saveSettings" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700">保存设置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部状态小提示 (Toast) -->
+    <div v-if="toastMessage" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center space-x-2 animate-bounce">
+      <span>{{ toastMessage }}</span>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+    createApp({
+      setup() {
+        const currentView = ref('bookshelf');
+        const books = ref([]);
+        const isLoadingBooks = ref(false);
+        const searchQuery = ref('');
+        const selectedExt = ref('');
+        const showSettings = ref(false);
+        const toastMessage = ref('');
+
+        const config = ref({
+          ebookDir: 'D:\\OneDrive - SkyMan\\个人文件\\我的文档\\我的电子书',
+          readingVault: 'D:\\Remotely-save\\读后',
+          studyVault: 'D:\\Remotely-save\\学习\\学习库',
+          apiBaseUrl: 'http://140.245.65.111:3005/v1',
+          apiKey: '',
+          model: 'auto'
+        });
+
+        // 伴读与阅读状态
+        const currentBook = ref(null);
+        const parsedChapters = ref([]);
+        const currentChapterIndex = ref(0);
+        const showOriginalDrawer = ref(false);
+        const studyMode = ref('reading'); // 'reading' (读后库) or 'study' (学习库)
+        const selectedText = ref('');
+        const feynmanAnswer = ref('');
+        const isGeneratingQuiz = ref(false);
+        const quizResult = ref('');
+
+        // 导读 Slide 状态
+        const showSlideModal = ref(false);
+        const currentSlideBook = ref(null);
+        const slides = ref([]);
+        const currentSlideIndex = ref(0);
+        const isLoadingSlides = ref(false);
+
+        const showToast = (msg) => {
+          toastMessage.value = msg;
+          setTimeout(() => toastMessage.value = '', 3000);
+        };
+
+        const loadConfig = async () => {
+          try {
+            const res = await fetch('/api/config');
+            const data = await res.json();
+            if (data.config) config.value = { ...config.value, ...data.config };
+          } catch(e) {}
+        };
+
+        const saveSettings = async () => {
+          try {
+            await fetch('/api/config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(config.value)
+            });
+            showSettings.value = false;
+            showToast('✅ 设置已保存');
+            loadBooks();
+          } catch(e) {
+            alert('保存失败: ' + e.message);
+          }
+        };
+
+        const loadBooks = async () => {
+          isLoadingBooks.value = true;
+          try {
+            const res = await fetch('/api/books');
+            const data = await res.json();
+            if (data.books) books.value = data.books;
+          } catch (e) {
+            console.error('加载图书失败:', e);
+          } finally {
+            isLoadingBooks.value = false;
+          }
+        };
+
+        const availableExts = computed(() => {
+          const exts = new Set(books.value.map(b => b.ext));
+          return Array.from(exts);
+        });
+
+        const getExtCount = (ext) => books.value.filter(b => b.ext === ext).length;
+
+        const filteredBooks = computed(() => {
+          return books.value.filter(b => {
+            const matchExt = !selectedExt.value || b.ext === selectedExt.value;
+            const q = searchQuery.value.trim().toLowerCase();
+            const matchQuery = !q || b.name.toLowerCase().includes(q) || b.folder.toLowerCase().includes(q);
+            return matchExt && matchQuery;
+          });
+        });
+
+        const formatFileSize = (bytes) => {
+          if (!bytes) return '未知';
+          if (bytes < 1024) return bytes + ' B';
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+          return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        };
+
+        // 🌟 开启先行导读 Slide 幻灯片秀
+        const openSlideDeck = async (book) => {
+          currentSlideBook.value = book;
+          slides.value = [];
+          currentSlideIndex.value = 0;
+          showSlideModal.value = true;
+          isLoadingSlides.value = true;
+
+          try {
+            const res = await fetch('/api/ai/slides', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookTitle: book.name,
+                author: book.folder,
+                sampleText: `本书来自 ${book.folder}，格式 ${book.ext}，大小 ${formatFileSize(book.size)}`
+              })
+            });
+            const data = await res.json();
+            if (data.slides && data.slides.length > 0) {
+              slides.value = data.slides;
+            } else {
+              throw new Error('未返回有效 Slide 数据');
+            }
+          } catch (e) {
+            slides.value = [
+              { tag: '导读速览', title: book.name, subtitle: '开启精读', bullets: ['一键进入沉浸阅读', '支持原文抽屉与 AI 问答'] }
+            ];
+          } finally {
+            isLoadingSlides.value = false;
+          }
+        };
+
+        const currentSlide = computed(() => slides.value[currentSlideIndex.value] || null);
+
+        const prevSlide = () => {
+          if (currentSlideIndex.value > 0) currentSlideIndex.value--;
+        };
+
+        const nextSlide = () => {
+          if (currentSlideIndex.value < slides.value.length - 1) currentSlideIndex.value++;
+        };
+
+        const startReadingFromSlide = () => {
+          showSlideModal.value = false;
+          openReader(currentSlideBook.value);
+        };
+
+        const saveSlidesToObsidian = async () => {
+          if (!currentSlideBook.value || slides.value.length === 0) return;
+          const bookName = currentSlideBook.value.name;
+          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
+
+          let mdContent = `# 📑 《${bookName}》· 智能导读全景 Slide\n\n`;
+          mdContent += `> 生成时间: ${new Date().toLocaleString()} | 书库源: [[${bookName}]]\n\n`;
+          slides.value.forEach((s, idx) => {
+            mdContent += `### Slide ${idx + 1}: ${s.title}\n`;
+            if (s.subtitle) mdContent += `*${s.subtitle}*\n\n`;
+            if (s.bullets) {
+              s.bullets.forEach(b => mdContent += `- ${b}\n`);
+            }
+            mdContent += `\n---\n\n`;
+          });
+
+          try {
+            await fetch('/api/obsidian/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vaultType: targetVault,
+                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
+                fileName: `${bookName}_智能导读Slide`,
+                content: mdContent
+              })
+            });
+            showToast(`✅ Slide 已沉淀至 Obsidian ${targetVault === 'reading' ? '读后库' : '学习库'}！`);
+          } catch (e) {
+            alert('存入失败: ' + e.message);
+          }
+        };
+
+        // 🌟 打开阅读器并解析
+        const openReader = async (book) => {
+          currentBook.value = book;
+          parsedChapters.value = [];
+          currentChapterIndex.value = 0;
+          currentView.value = 'reader';
+          feynmanAnswer.value = '';
+          quizResult.value = '';
+
+          try {
+            const res = await fetch(`/api/book/file?path=${encodeURIComponent(book.fullPath)}`);
+            if (book.ext === 'epub') {
+              const arrayBuffer = await res.arrayBuffer();
+              await parseEpubBuffer(arrayBuffer, book.name);
+            } else {
+              const text = await res.text();
+              parseTextContent(text, book.name);
+            }
+          } catch (e) {
+            alert('读取图书失败: ' + e.message);
+          }
+        };
+
+        const parseTextContent = (text, title) => {
+          const lines = text.split('\n');
+          const chapters = [];
+          let currentTitle = title;
+          let currentBody = [];
+
+          const chapterRegex = /^\s*(第[0-9一二三四五六七八九十百千]+[章回卷节部篇]|Chapter\s+[0-9]+|[0-9]{1,3}\s+)/i;
+
+          for (const line of lines) {
+            if (chapterRegex.test(line) && line.trim().length < 40) {
+              if (currentBody.length > 0) {
+                chapters.push({ title: currentTitle, content: currentBody.join('\n') });
+              }
+              currentTitle = line.trim();
+              currentBody = [];
+            } else {
+              currentBody.push(line);
+            }
+          }
+          if (currentBody.length > 0) {
+            chapters.push({ title: currentTitle, content: currentBody.join('\n') });
+          }
+          parsedChapters.value = chapters.length > 0 ? chapters : [{ title: title, content: text }];
+        };
+
+        const parseEpubBuffer = async (arrayBuffer, title) => {
+          const zip = await JSZip.loadAsync(arrayBuffer);
+          const containerFile = zip.file('META-INF/container.xml');
+          let opfPath = 'content.opf';
+          if (containerFile) {
+            const containerXml = await containerFile.async('text');
+            const match = containerXml.match(/full-path=["']([^"']+)["']/i);
+            if (match) opfPath = match[1];
+          }
+
+          const opfFile = zip.file(opfPath);
+          if (!opfFile) throw new Error('无法解析 EPUB 结构');
+          const opfXml = await opfFile.async('text');
+          const parser = new DOMParser();
+          const opfDoc = parser.parseFromString(opfXml, 'application/xml');
+
+          const spineItems = Array.from(opfDoc.querySelectorAll('spine > itemref'));
+          const manifestItems = {};
+          opfDoc.querySelectorAll('manifest > item').forEach(item => {
+            manifestItems[item.getAttribute('id')] = item.getAttribute('href');
+          });
+
+          const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+          const chapters = [];
+
+          for (const itemRef of spineItems.slice(0, 50)) {
+            const id = itemRef.getAttribute('idref');
+            const href = manifestItems[id];
+            if (!href) continue;
+            const fullHref = opfDir + href;
+            const chapFile = zip.file(fullHref) || zip.file(decodeURIComponent(fullHref));
+            if (!chapFile) continue;
+
+            const html = await chapFile.async('text');
+            const doc = parser.parseFromString(html, 'text/html');
+            const h = doc.querySelector('h1, h2, h3, title');
+            const chapTitle = h ? h.textContent.trim() : `第 ${chapters.length + 1} 节`;
+            const chapContent = doc.body ? doc.body.innerText.trim() : '';
+
+            if (chapContent.length > 50) {
+              chapters.push({ title: chapTitle, content: chapContent });
+            }
+          }
+
+          parsedChapters.value = chapters.length > 0 ? chapters : [{ title: title, content: 'EPUB 解析正文' }];
+        };
+
+        const currentChapter = computed(() => parsedChapters.value[currentChapterIndex.value] || null);
+
+        const chapterParagraphs = computed(() => {
+          if (!currentChapter.value) return [];
+          return currentChapter.value.content.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+        });
+
+        const selectChapter = (idx) => {
+          if (idx >= 0 && idx < parsedChapters.value.length) {
+            currentChapterIndex.value = idx;
+            feynmanAnswer.value = '';
+            quizResult.value = '';
+          }
+        };
+
+        // 文本划线交互
+        const handleTextSelect = () => {
+          const sel = window.getSelection().toString().trim();
+          if (sel.length > 2) {
+            selectedText.value = sel;
+          }
+        };
+
+        const askFeynman = async () => {
+          if (!selectedText.value) return;
+          feynmanAnswer.value = '正在思考，用费曼大白话拆解中...';
+          try {
+            const res = await fetch('/api/ai/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messages: [
+                  { role: 'system', content: '你是费曼学习法导师。请用最通俗易懂的“大白话”、生活中的生动比方，拆解用户选中的这段文字或概念，直击本质，两百字内。' },
+                  { role: 'user', content: `请用大白话解释这段话：“${selectedText.value}”` }
+                ]
+              })
+            });
+            const data = await res.json();
+            feynmanAnswer.value = data.reply || '解析完成';
+          } catch(e) {
+            feynmanAnswer.value = '请求失败: ' + e.message;
+          }
+        };
+
+        const saveSelectionToObsidian = async () => {
+          if (!selectedText.value || !currentBook.value) return;
+          const bookName = currentBook.value.name;
+          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
+
+          let note = `### 摘录 (${currentChapter.value?.title || '正文'})\n> ${selectedText.value}\n\n`;
+          if (feynmanAnswer.value) {
+            note += `**💡 费曼大白话解析**:\n${feynmanAnswer.value}\n\n`;
+          }
+
+          try {
+            await fetch('/api/obsidian/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vaultType: targetVault,
+                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
+                fileName: `${bookName}_伴读随记`,
+                content: note,
+                append: true
+              })
+            });
+            showToast(`✅ 划线笔记已追加至 Obsidian！`);
+            selectedText.value = '';
+          } catch(e) {
+            alert('保存失败: ' + e.message);
+          }
+        };
+
+        const generateChapterQuiz = async () => {
+          if (!currentChapter.value) return;
+          isGeneratingQuiz.value = true;
+          quizResult.value = '';
+
+          try {
+            const res = await fetch('/api/ai/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messages: [
+                  { role: 'system', content: '你是读书测验导师。请根据本章内容出 3 道简明、直击逻辑要点的理解测验题（附简明参考答案与解析），检验读者是否真正消化。' },
+                  { role: 'user', content: `章节：${currentChapter.value.title}\n\n内容前2000字：\n${currentChapter.value.content.slice(0, 2000)}` }
+                ]
+              })
+            });
+            const data = await res.json();
+            quizResult.value = data.reply;
+          } catch(e) {
+            quizResult.value = '出题失败: ' + e.message;
+          } finally {
+            isGeneratingQuiz.value = false;
+          }
+        };
+
+        const saveQuizToObsidian = async () => {
+          if (!quizResult.value || !currentBook.value) return;
+          const bookName = currentBook.value.name;
+          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
+
+          const note = `### 🧠 测验题卡 (${currentChapter.value?.title})\n${quizResult.value}\n\n---\n`;
+          try {
+            await fetch('/api/obsidian/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vaultType: targetVault,
+                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
+                fileName: `${bookName}_章节测验卡`,
+                content: note,
+                append: true
+              })
+            });
+            showToast(`✅ 测验卡已追加至 Obsidian！`);
+          } catch(e) {
+            alert('保存失败: ' + e.message);
+          }
+        };
+
+        // 键盘翻页监听
+        const handleKeyDown = (e) => {
+          if (showSlideModal.value) {
+            if (e.key === 'ArrowLeft') prevSlide();
+            else if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            else if (e.key === 'Escape') showSlideModal.value = false;
+          }
+        };
+
+        onMounted(() => {
+          loadConfig();
+          loadBooks();
+          window.addEventListener('keydown', handleKeyDown);
+        });
+
+        onUnmounted(() => {
+          window.removeEventListener('keydown', handleKeyDown);
+        });
+
+        return {
+          currentView,
+          books,
+          isLoadingBooks,
+          searchQuery,
+          selectedExt,
+          availableExts,
+          getExtCount,
+          filteredBooks,
+          formatFileSize,
+          loadBooks,
+          showSettings,
+          config,
+          saveSettings,
+          toastMessage,
+          // 导读 Slide
+          showSlideModal,
+          currentSlideBook,
+          slides,
+          currentSlideIndex,
+          currentSlide,
+          isLoadingSlides,
+          openSlideDeck,
+          prevSlide,
+          nextSlide,
+          startReadingFromSlide,
+          saveSlidesToObsidian,
+          // 伴读与阅读
+          currentBook,
+          parsedChapters,
+          currentChapterIndex,
+          currentChapter,
+          chapterParagraphs,
+          openReader,
+          selectChapter,
+          showOriginalDrawer,
+          studyMode,
+          selectedText,
+          handleTextSelect,
+          feynmanAnswer,
+          askFeynman,
+          saveSelectionToObsidian,
+          isGeneratingQuiz,
+          quizResult,
+          generateChapterQuiz,
+          saveQuizToObsidian
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
