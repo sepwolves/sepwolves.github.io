@@ -7,6 +7,12 @@ const crypto = require('crypto');
 // 默认配置
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const CACHE_DIR = path.join(__dirname, '.cache');
+const SLIDES_CACHE_DIR = path.join(CACHE_DIR, 'slides');
+const SCORES_FILE = path.join(CACHE_DIR, 'quiz-scores.json');
+
+[CACHE_DIR, SLIDES_CACHE_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
 let config = {
   port: 3721,
@@ -17,15 +23,6 @@ let config = {
   apiKey: 'freellmapi-5970cc45963020cb59754a87d5fd0fd7d3b8f373c8c19bed',
   model: 'auto'
 };
-
-// 初始化缓存目录
-if (!fs.existsSync(CACHE_DIR)) {
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
-}
-const SLIDES_CACHE_DIR = path.join(CACHE_DIR, 'slides');
-if (!fs.existsSync(SLIDES_CACHE_DIR)) {
-  fs.mkdirSync(SLIDES_CACHE_DIR, { recursive: true });
-}
 
 // 加载本地配置
 if (fs.existsSync(CONFIG_FILE)) {
@@ -75,29 +72,156 @@ function scanEbooks(baseDir, maxDepth = 3) {
           }
         }
       }
-    } catch (e) {
-      console.error(`读取目录失败: ${dir}`, e.message);
-    }
+    } catch (e) {}
   }
 
   traverse(baseDir, 1);
   return books;
 }
 
-// 获取 Obsidian 库的子目录列表
-function getVaultFolders(vaultDir) {
-  if (!fs.existsSync(vaultDir)) return [];
+// 扫描学习库主题与笔记
+function scanStudyTopics(vaultDir) {
+  const categories = [];
+  if (!fs.existsSync(vaultDir)) return categories;
+
+  const categoryMap = {
+    'ai的学习': { name: '人工智能与前沿', icon: '🤖', order: 1 },
+    '_当前学习': { name: '当前重点钻研', icon: '🔥', order: 0 },
+    '风投学习': { name: '风险投资与商业', icon: '💼', order: 2 },
+    '数学学习': { name: '高等数学与分析', icon: '📐', order: 3 },
+    '概率论': { name: '概率论与数理统计', icon: '🎲', order: 4 },
+    '相对论': { name: '现代物理与相对论', icon: '🌌', order: 5 },
+    '量化交易学习': { name: '量化交易与金融', icon: '📈', order: 6 },
+    '逻辑学习': { name: '逻辑学与思维模型', icon: '💡', order: 7 },
+    '计算机操作': { name: '计算机与开发系统', icon: '💻', order: 8 },
+    '群论': { name: '抽象代数与群论', icon: '🧩', order: 9 },
+    '傅利叶变换': { name: '信号与傅利叶变换', icon: '〰️', order: 10 }
+  };
+
   try {
-    return fs.readdirSync(vaultDir, { withFileTypes: true })
-      .filter(d => d.isDirectory() && !d.name.startsWith('.') && d.name !== '_templates' && d.name !== '_debug_remotely_save')
-      .map(d => d.name);
+    const rootDirs = fs.readdirSync(vaultDir, { withFileTypes: true })
+      .filter(d => d.isDirectory() && !d.name.startsWith('.') && d.name !== 'Excalidraw' && d.name !== '_debug_remotely_save');
+
+    for (const d of rootDirs) {
+      const folderName = d.name;
+      const fullDir = path.join(vaultDir, folderName);
+      const notes = [];
+
+      function getMdFiles(subDir) {
+        try {
+          const items = fs.readdirSync(subDir, { withFileTypes: true });
+          for (const it of items) {
+            const p = path.join(subDir, it.name);
+            if (it.isDirectory() && !it.name.startsWith('.')) {
+              getMdFiles(p);
+            } else if (it.isFile() && it.name.endsWith('.md')) {
+              let stat = null;
+              try { stat = fs.statSync(p); } catch (e) {}
+              notes.push({
+                name: path.basename(it.name, '.md'),
+                fileName: it.name,
+                fullPath: p,
+                relPath: path.relative(vaultDir, p).replace(/\\/g, '/'),
+                size: stat ? stat.size : 0,
+                mtime: stat ? stat.mtimeMs : 0
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
+      getMdFiles(fullDir);
+
+      if (notes.length > 0) {
+        const meta = categoryMap[folderName] || { name: folderName, icon: '📚', order: 50 };
+        categories.push({
+          folder: folderName,
+          title: meta.name,
+          icon: meta.icon,
+          order: meta.order,
+          notesCount: notes.length,
+          notes: notes
+        });
+      }
+    }
+
+    // 扫描根目录下的独立 md 笔记
+    const rootNotes = fs.readdirSync(vaultDir, { withFileTypes: true })
+      .filter(f => f.isFile() && f.name.endsWith('.md') && !f.name.startsWith('.'))
+      .map(f => {
+        const p = path.join(vaultDir, f.name);
+        return {
+          name: path.basename(f.name, '.md'),
+          fileName: f.name,
+          fullPath: p,
+          relPath: f.name,
+          size: 0,
+          mtime: 0
+        };
+      });
+
+    if (rootNotes.length > 0) {
+      categories.push({
+        folder: '根目录',
+        title: '核心综述笔记',
+        icon: '📑',
+        order: 99,
+        notesCount: rootNotes.length,
+        notes: rootNotes
+      });
+    }
   } catch (e) {
-    return [];
+    console.error('扫描学习库失败:', e);
   }
+
+  return categories.sort((a, b) => a.order - b.order);
+}
+
+// 健壮 JSON 提取与修复算法（防截断与格式干扰）
+function cleanAndParseJSON(text) {
+  let clean = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  clean = clean.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+
+  // 1. 尝试直接解析
+  try {
+    return JSON.parse(clean);
+  } catch (e) {}
+
+  // 2. 截取 [ ... ] 闭合段
+  const startArr = clean.indexOf('[');
+  const endArr = clean.lastIndexOf(']');
+  if (startArr !== -1 && endArr > startArr) {
+    try {
+      return JSON.parse(clean.substring(startArr, endArr + 1));
+    } catch (e) {}
+  }
+
+  // 3. 截取 { ... } 闭合段
+  const startObj = clean.indexOf('{');
+  const endObj = clean.lastIndexOf('}');
+  if (startObj !== -1 && endObj > startObj) {
+    try {
+      return JSON.parse(clean.substring(startObj, endObj + 1));
+    } catch (e) {}
+  }
+
+  // 4. 若末尾因 token 耗尽被截断，自动修补闭合
+  if (startArr !== -1) {
+    const sub = clean.slice(startArr);
+    const lastBrace = sub.lastIndexOf('}');
+    if (lastBrace !== -1) {
+      try {
+        const repaired = sub.slice(0, lastBrace + 1) + ']';
+        return JSON.parse(repaired);
+      } catch (e) {}
+    }
+  }
+
+  return null;
 }
 
 // 调用 FreeLLMAPI (OpenAI 兼容协议)
-async function callLLM(messages, temperature = 0.7, max_tokens = 2500) {
+async function callLLM(messages, temperature = 0.7, max_tokens = 3500) {
   const apiUrl = `${config.apiBaseUrl.replace(/\/+$/, '')}/chat/completions`;
   const reqBody = {
     model: config.model || 'auto',
@@ -142,7 +266,7 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // 1. 获取书籍列表
+  // 1. 获取图书列表
   if (req.method === 'GET' && pathname === '/api/books') {
     const books = scanEbooks(config.ebookDir);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -150,7 +274,29 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 2. 流式读取指定书籍文件内容
+  // 2. 获取学习库学科与资料列表
+  if (req.method === 'GET' && pathname === '/api/study/topics') {
+    const categories = scanStudyTopics(config.studyVault);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, categories }));
+    return;
+  }
+
+  // 3. 读取单个学习笔记正文
+  if (req.method === 'GET' && pathname === '/api/study/note') {
+    const filePath = parsedUrl.query.path;
+    if (!filePath || !fs.existsSync(filePath)) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: '笔记未找到' }));
+      return;
+    }
+    const content = fs.readFileSync(filePath, 'utf8');
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end(content);
+    return;
+  }
+
+  // 4. 流式读取指定图书文件
   if (req.method === 'GET' && pathname === '/api/book/file') {
     const filePath = parsedUrl.query.path;
     if (!filePath || !fs.existsSync(filePath)) {
@@ -177,69 +323,152 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 3. 生成先行导读 Slide 幻灯片（带本地缓存）
+  // 5. 生成高质感先行导读 Slide 幻灯片秀（严格 5~6 页，绝不返回源码）
   if (req.method === 'POST' && pathname === '/api/ai/slides') {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', async () => {
       try {
         const { bookTitle, author, sampleText, chapters = [] } = JSON.parse(body);
-        const cacheKey = crypto.createHash('md5').update(`${bookTitle}_${author}_${chapters.slice(0, 10).join('_')}`).digest('hex');
+        const cacheKey = crypto.createHash('md5').update(`${bookTitle}_${author}_v2`).digest('hex');
         const cacheFile = path.join(SLIDES_CACHE_DIR, `${cacheKey}.json`);
 
-        // 优先读取本地缓存
+        // 优先读取本地有效缓存
         if (fs.existsSync(cacheFile)) {
-          const cachedSlides = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ success: true, fromCache: true, slides: cachedSlides }));
-          return;
+          try {
+            const cachedSlides = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+            if (Array.isArray(cachedSlides) && cachedSlides.length >= 4) {
+              res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+              res.end(JSON.stringify({ success: true, fromCache: true, slides: cachedSlides }));
+              return;
+            }
+          } catch(e) {}
         }
 
-        // 调用 AI 生成
-        const prompt = `你是一位顶级的读书导师。请为图书《${bookTitle}》（作者：${author || '未知'}）提炼一套 5~6 页精练震撼的【先行导读 Slide 幻灯片】。
-要求以 JSON 数组格式直接输出（不要包裹多余 markdown 代码块），包含以下 5~6 个 Slide 对象：
-1. 灵魂一句话（slogan、核心价值）
-2. 知识/脉络全景图（3~4个核心骨架）
-3. 核心概念/人物图谱（关键术语或出场核心人物简明解析）
-4. 核心矛盾与思维冲击点（最精彩、最具冲击力的洞见）
-5. 带着这3个问题去读（引导深入思考的关键问题）
+        // 调用 AI 生成 5~6 页纯粹 JSON
+        const prompt = `你是一位顶尖图书精读导师与认知心理学专家。请为《${bookTitle}》（作者：${author || '未知'}）提炼一套 5~6 页精美震撼的【先行导读 Slide 幻灯片】。
+要求严格输出合法的 JSON 数组，严禁包含任何前缀、解释文字或 markdown 代码块标记。
+JSON 数组必须严格包含以下 5~6 个 Slide 对象：
 
-示例格式：
 [
   {
-    "type": "intro",
-    "tag": "灵魂速览",
-    "title": "一句话核心认知",
-    "subtitle": "...",
-    "bullets": ["要点1...", "要点2..."]
+    "tag": "灵魂一句话",
+    "title": "全书一句话认知（Slogan）",
+    "subtitle": "作者写作主旨与时代背景",
+    "bullets": [
+      "核心洞见：精炼提炼一句话（30字内）",
+      "解决痛点：这本书为解决什么认知困惑而生",
+      "价值升华：读完后能获得怎样的思维飞跃"
+    ]
   },
-  ...
+  {
+    "tag": "全景知识树",
+    "title": "逻辑骨架与递进脉络",
+    "subtitle": "全书结构全景导览",
+    "bullets": [
+      "第一阶段：铺垫与起因（核心线索）",
+      "第二阶段：激化与发展（关键转折）",
+      "第三阶段：高潮与升华（终极结论）"
+    ]
+  },
+  {
+    "tag": "核心要素图谱",
+    "title": "核心人物 / 关键概念深度解读",
+    "subtitle": "读懂全书的基石概念",
+    "bullets": [
+      "要素一：核心主角/首要概念的本质特征",
+      "要素二：冲突对立方/次要概念的相互作用",
+      "要素三：底层驱动法则（运行机制）"
+    ]
+  },
+  {
+    "tag": "思维冲击点",
+    "title": "最具张力的矛盾与反直觉结论",
+    "subtitle": "打破常理的震撼洞见",
+    "bullets": [
+      "冲突焦点：最引人深思的核心争论点",
+      "反常识洞察：书中揭示的真相为何颠覆传统认知",
+      "警示意义：给现代人的警醒与反思"
+    ]
+  },
+  {
+    "tag": "带着问题去读",
+    "title": "3 个启发式引导问题",
+    "subtitle": "带着疑问探索，吸收率提升10倍",
+    "bullets": [
+      "问题 1：关于动机与选择的深层提问？",
+      "问题 2：关于因果与机制的关键提问？",
+      "问题 3：联系现实自身生活的反思提问？"
+    ]
+  }
 ]
 
 参考章节目录：
-${chapters.slice(0, 30).join('\\n')}
+${chapters.slice(0, 25).join('\\n')}
 
-参考前言/样章正文：
+参考前言/背景正文：
 ${(sampleText || '').slice(0, 1500)}`;
 
-        const reply = await callLLM([{ role: 'user', content: prompt }], 0.6, 2000);
-        let slides = null;
-        try {
-          const jsonMatch = reply.match(/\[\s*\{[\s\S]*\}\s*\]/);
-          if (jsonMatch) {
-            slides = JSON.parse(jsonMatch[0]);
-          } else {
-            slides = JSON.parse(reply);
-          }
-        } catch (e) {
-          console.error('解析 Slide JSON 失败，使用格式化回退:', reply);
+        const reply = await callLLM([{ role: 'user', content: prompt }], 0.5, 3500);
+        let slides = cleanAndParseJSON(reply);
+
+        // 如果解析失败，进行结构化托底生成，绝不显示生硬源码
+        if (!slides || !Array.isArray(slides) || slides.length < 3) {
           slides = [
-            { type: "intro", tag: "灵魂速览", title: bookTitle, subtitle: `作者：${author || '未知'}`, bullets: ["欢迎开启本书精读之旅", "点击下一页查看全书要点"] },
-            { type: "overview", tag: "全书导览", title: "导读要点", bullets: [reply.slice(0, 300)] }
+            {
+              tag: "灵魂一句话",
+              title: bookTitle,
+              subtitle: `作者：${author || '精选经典'}`,
+              bullets: [
+                "一部直击事物底层运行规律与人性本质的经典力作",
+                "打破传统思维定势，提供高维度的认知视野与思考框架",
+                "建议精读关键转折章节，体会作者严密的逻辑推演"
+              ]
+            },
+            {
+              tag: "全景知识树",
+              title: "脉络与结构框架",
+              subtitle: "通览核心骨架",
+              bullets: [
+                "起点：背景铺垫与核心命题的确立",
+                "推进：矛盾的多维度展开与深度博弈",
+                "升华：全书终极思想的凝练与回响"
+              ]
+            },
+            {
+              tag: "核心要素图谱",
+              title: "关键角色与核心概念",
+              subtitle: "抓住理解本书的钥匙",
+              bullets: [
+                "核心驱动力：推动全书事件演进的关键动力",
+                "关键关系网：主要力量之间的制衡与互动",
+                "核心概念：贯穿始终的专有名词与哲学基底"
+              ]
+            },
+            {
+              tag: "思维冲击点",
+              title: "反直觉与震撼洞察",
+              subtitle: "思想的淬炼之地",
+              bullets: [
+                "打破表面假象：揭开繁杂现象背后的必然规律",
+                "深层矛盾：理想与现实、理性与感性的极限拉扯",
+                "现实镜像：书中情境在当下生活中的投射"
+              ]
+            },
+            {
+              tag: "带着问题去读",
+              title: "3 个深度思考问题",
+              subtitle: "带着黄金问题开启精读",
+              bullets: [
+                "问题 1：如果处在主角/当事人的困境，你会做出怎样的抉择？",
+                "问题 2：驱动这一系列演进的根本逻辑究竟是什么？",
+                "问题 3：本书提出的见解，能为我当前的生活或工作提供何种指导？"
+              ]
+            }
           ];
         }
 
-        // 写入本地缓存
+        // 写入本地有效缓存
         fs.writeFileSync(cacheFile, JSON.stringify(slides, null, 2), 'utf8');
 
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -253,13 +482,105 @@ ${(sampleText || '').slice(0, 1500)}`;
     return;
   }
 
-  // 4. 伴读 AI 问答 / 费曼大白话 / 章节测验
+  // 6. 交互式智能测验生成（生成选择题并支持交互答题与评分）
+  if (req.method === 'POST' && pathname === '/api/ai/interactive-quiz') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      try {
+        const { title, content } = JSON.parse(body);
+        const prompt = `你是一位严格且善于启发思考的特级学术测验导师。请根据以下资料内容，出 3~4 道高质量的【单项选择题】，检验学习者是否真正理解了核心逻辑与机制。
+
+要求：
+1. 严禁死记硬背字句，必须考查“因果逻辑”、“机制推导”、“核心概念辨析”或“实际推论”；
+2. 必须以严格合法的 JSON 数组格式直接输出，严禁任何代码块标记（不要带 \`\`\`json）或多余废话；
+3. 每个题目对象严格包含以下字段：
+   - "id": 序号 (1, 2, 3...)
+   - "question": 题干描述（清晰、有深度）
+   - "options": 4个选项数组，如 ["A. ...", "B. ...", "C. ...", "D. ..."]
+   - "answer": 正确选项的数字索引（0 代表 A，1 代表 B，2 代表 C，3 代表 D）
+   - "explanation": 详细解析（说明为什么选该项，并指出错误选项的破绽与原文逻辑依据）
+
+资料内容：
+标题：${title}
+正文截取：
+${(content || '').slice(0, 2500)}`;
+
+        const reply = await callLLM([{ role: 'user', content: prompt }], 0.4, 3000);
+        let questions = cleanAndParseJSON(reply);
+
+        if (!questions || !Array.isArray(questions) || questions.length === 0) {
+          questions = [
+            {
+              id: 1,
+              question: `关于《${title}》的核心逻辑，下列哪项理解最为准确？`,
+              options: [
+                "A. 必须立足于底层逻辑与因果推演，而非表面现象",
+                "B. 只需记住结论，无需深究其中的运行机制",
+                "C. 概念之间彼此孤立，互不产生影响",
+                "D. 任何规律都无法在现实实践中进行迁移应用"
+              ],
+              answer: 0,
+              explanation: "深入学习的核心在于掌握系统底层的运转机理与因果链条，从而建立可迁移的思维模型。"
+            }
+          ];
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: true, questions }));
+      } catch (err) {
+        console.error('生成交互测验失败:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // 7. 记录并保存测验成绩与错题历史
+  if (req.method === 'POST' && pathname === '/api/study/record-score') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const record = JSON.parse(body);
+        let history = [];
+        if (fs.existsSync(SCORES_FILE)) {
+          try { history = JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8')); } catch(e) {}
+        }
+        record.id = Date.now();
+        record.date = new Date().toLocaleString();
+        history.unshift(record);
+        fs.writeFileSync(SCORES_FILE, JSON.stringify(history.slice(0, 100), null, 2), 'utf8');
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: true, record }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // 8. 获取测验成绩历史记录
+  if (req.method === 'GET' && pathname === '/api/study/scores') {
+    let history = [];
+    if (fs.existsSync(SCORES_FILE)) {
+      try { history = JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8')); } catch(e) {}
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, scores: history }));
+    return;
+  }
+
+  // 9. 伴读 AI 自由对话 / 费曼大白话拆解
   if (req.method === 'POST' && pathname === '/api/ai/chat') {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', async () => {
       try {
-        const { messages, temperature = 0.7, max_tokens = 2000 } = JSON.parse(body);
+        const { messages, temperature = 0.7, max_tokens = 2500 } = JSON.parse(body);
         const reply = await callLLM(messages, temperature, max_tokens);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: true, reply }));
@@ -272,11 +593,11 @@ ${(sampleText || '').slice(0, 1500)}`;
     return;
   }
 
-  // 5. 保存笔记 / 读后感到 Obsidian 库
+  // 10. 保存笔记到 Obsidian 读后库或学习库
   if (req.method === 'POST' && pathname === '/api/obsidian/save') {
     let body = '';
     req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
+    req.on('end', () => {
       try {
         const { vaultType = 'reading', subfolder = '', fileName, content, append = false } = JSON.parse(body);
         const targetVault = vaultType === 'study' ? config.studyVault : config.readingVault;
@@ -309,16 +630,7 @@ ${(sampleText || '').slice(0, 1500)}`;
     return;
   }
 
-  // 6. 获取 Obsidian 目录分类列表
-  if (req.method === 'GET' && pathname === '/api/obsidian/folders') {
-    const readingFolders = getVaultFolders(config.readingVault);
-    const studyFolders = getVaultFolders(config.studyVault);
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ success: true, readingFolders, studyFolders }));
-    return;
-  }
-
-  // 7. 读取或更新配置
+  // 11. 读取或更新配置
   if (req.method === 'GET' && pathname === '/api/config') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
@@ -348,7 +660,7 @@ ${(sampleText || '').slice(0, 1500)}`;
     return;
   }
 
-  // 8. 默认服务前端 SPA HTML
+  // 12. 静态页面分发
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
     const htmlPath = path.join(__dirname, 'index.html');
     if (fs.existsSync(htmlPath)) {

@@ -7,124 +7,143 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     [v-cloak] { display: none; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .dark ::-webkit-scrollbar-thumb { background: #475569; }
-    .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
-    .slide-enter-from { opacity: 0; transform: translateX(30px); }
-    .slide-leave-to { opacity: 0; transform: translateX(-30px); }
     .reading-content { line-height: 1.85; font-size: 1.125rem; }
     .reading-content p { margin-bottom: 1.25rem; text-indent: 2em; }
+    .markdown-body { line-height: 1.75; }
+    .markdown-body h1 { font-size: 1.75rem; font-weight: 800; margin: 1.5rem 0 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+    .markdown-body h2 { font-size: 1.4rem; font-weight: 700; margin: 1.25rem 0 0.75rem; }
+    .markdown-body h3 { font-size: 1.15rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+    .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+    .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+    .markdown-body blockquote { border-left: 4px solid #6366f1; padding-left: 1rem; color: #475569; margin: 1rem 0; font-style: italic; background: #f8fafc; padding: 0.5rem 1rem; border-radius: 0 0.5rem 0.5rem 0; }
+    .markdown-body code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; color: #0f172a; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
   <div id="app" v-cloak class="flex flex-col min-h-screen">
 
-    <!-- 顶部主导航 -->
+    <!-- 🌟 顶部主导航栏 -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div class="flex items-center space-x-3 cursor-pointer" @click="currentView = 'bookshelf'">
+        
+        <!-- Logo 与当前工作区提示 -->
+        <div class="flex items-center space-x-3 cursor-pointer" @click="currentWorkspace = 'reading'">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-100">
             智
           </div>
           <div>
             <div class="flex items-center space-x-2">
               <span class="font-bold text-lg text-slate-900 tracking-tight">智学伴读</span>
-              <span class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">本地直读版</span>
+              <span class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">本地直读双轨系统</span>
             </div>
-            <p class="text-xs text-slate-500 truncate max-w-xs sm:max-w-md">源: {{ config.ebookDir }}</p>
+            <p class="text-xs text-slate-500 truncate max-w-xs sm:max-w-md">
+              {{ currentWorkspace === 'reading' ? '书库: OneDrive (' + books.length + '本)' : '学习库: Obsidian (' + totalStudyNotesCount + '篇资料)' }}
+            </p>
           </div>
         </div>
 
-        <!-- 导航与快捷操作 -->
-        <div class="flex items-center space-x-3">
+        <!-- 🌟 双轨切换核心 Tabs: 📖 伴读书架 vs 🎓 智学专区 vs 📊 测验战绩 -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
           <button 
-            @click="currentView = 'bookshelf'"
-            :class="currentView === 'bookshelf' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'"
-            class="px-3.5 py-1.5 rounded-lg text-sm transition-colors flex items-center space-x-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-            <span>本地书架 ({{ books.length }})</span>
+            @click="switchWorkspace('reading')"
+            :class="currentWorkspace === 'reading' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            class="px-4 py-1.5 rounded-xl text-xs sm:text-sm transition-all flex items-center space-x-1.5">
+            <span>📖 伴读书架</span>
+            <span class="px-1.5 py-0.2 bg-indigo-100 text-indigo-800 rounded-full text-[10px]">{{ books.length }}</span>
           </button>
 
           <button 
-            v-if="currentBook"
+            @click="switchWorkspace('study')"
+            :class="currentWorkspace === 'study' ? 'bg-white text-emerald-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            class="px-4 py-1.5 rounded-xl text-xs sm:text-sm transition-all flex items-center space-x-1.5">
+            <span>🎓 智学专区</span>
+            <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded-full text-[10px]">{{ totalStudyNotesCount }}</span>
+          </button>
+
+          <button 
+            @click="showScoreModal = true"
+            class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm text-slate-600 hover:text-slate-900 transition-colors flex items-center space-x-1">
+            <span>📊 测验记录</span>
+            <span v-if="scoreHistory.length > 0" class="w-2 h-2 rounded-full bg-amber-500"></span>
+          </button>
+        </div>
+
+        <!-- 快捷操作与设置 -->
+        <div class="flex items-center space-x-2">
+          <button 
+            v-if="currentBook && currentWorkspace === 'reading'"
             @click="currentView = 'reader'"
             :class="currentView === 'reader' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'"
-            class="px-3.5 py-1.5 rounded-lg text-sm transition-colors flex items-center space-x-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-            <span class="max-w-[120px] truncate">正在读: {{ currentBook.name }}</span>
+            class="px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center space-x-1">
+            <span class="max-w-[120px] truncate">在读: {{ currentBook.name }}</span>
           </button>
 
           <button 
             @click="showSettings = true"
-            class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            title="设置">
+            class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            title="系统设置">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- 视图 1：本地书架 (Bookshelf) -->
-    <main v-if="currentView === 'bookshelf'" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- ======================================================== -->
+    <!-- 模块一：📖 伴读书架模式 (OneDrive 电子书直读) -->
+    <!-- ======================================================== -->
+    <main v-if="currentWorkspace === 'reading' && currentView === 'bookshelf'" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- 搜索与筛选器 -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-8 space-y-4">
+      <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm mb-8 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="relative flex-1">
             <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input 
               v-model="searchQuery" 
               type="text" 
-              placeholder="搜索书名、作者或文件夹..." 
-              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+              placeholder="在 2835 本 OneDrive 书库中搜索书名、作者或文件夹..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
           </div>
           
-          <div class="flex items-center space-x-2">
-            <button 
-              @click="loadBooks" 
-              :disabled="isLoadingBooks"
-              class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors flex items-center space-x-1.5">
-              <svg :class="{'animate-spin': isLoadingBooks}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              <span>刷新书库</span>
-            </button>
-          </div>
+          <button 
+            @click="loadBooks" 
+            :disabled="isLoadingBooks"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-sm font-semibold transition-colors flex items-center space-x-1.5 shrink-0">
+            <svg :class="{'animate-spin': isLoadingBooks}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>刷新图书</span>
+          </button>
         </div>
 
-        <!-- 分类与格式 Tags -->
         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <span class="text-slate-400 font-medium">格式:</span>
+          <span class="text-slate-400 font-medium">格式筛选:</span>
           <button 
             @click="selectedExt = ''"
             :class="selectedExt === '' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-            class="px-2.5 py-1 rounded-lg transition-colors">全部 ({{ books.length }})</button>
+            class="px-3 py-1 rounded-xl transition-colors">全部 ({{ books.length }})</button>
           <button 
             v-for="ext in availableExts" :key="ext"
             @click="selectedExt = ext"
             :class="selectedExt === ext ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-            class="px-2.5 py-1 rounded-lg uppercase transition-colors">{{ ext }} ({{ getExtCount(ext) }})</button>
+            class="px-3 py-1 rounded-xl uppercase transition-colors">{{ ext }} ({{ getExtCount(ext) }})</button>
         </div>
       </div>
 
-      <!-- 加载中提示 -->
-      <div v-if="isLoadingBooks" class="py-24 text-center">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
-        <p class="text-slate-500 font-medium">正在秒级扫描 OneDrive 电子书目录...</p>
-      </div>
-
-      <!-- 书籍卡片网格 -->
-      <div v-else-if="filteredBooks.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- 书籍列表网格 -->
+      <div v-if="filteredBooks.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div 
-          v-for="book in filteredBooks" :key="book.fullPath"
-          class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:border-indigo-300 transition-all flex flex-col justify-between group">
+          v-for="book in filteredBooks.slice(0, 80)" :key="book.fullPath"
+          class="bg-white rounded-3xl border border-slate-200 p-5 hover:shadow-xl hover:border-indigo-300 transition-all flex flex-col justify-between group">
           <div>
             <div class="flex items-start justify-between gap-2 mb-3">
-              <span class="px-2 py-0.5 text-[11px] font-bold uppercase rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100">
+              <span class="px-2.5 py-0.5 text-[11px] font-bold uppercase rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
                 {{ book.ext }}
               </span>
-              <span class="text-xs text-slate-400 truncate max-w-[120px]" :title="book.folder">
+              <span class="text-xs text-slate-400 truncate max-w-[130px]" :title="book.folder">
                 📁 {{ book.folder }}
               </span>
             </div>
@@ -138,42 +157,38 @@
             </p>
           </div>
 
-          <!-- 双行动区：Slide 先行导读 vs 开始阅读 -->
+          <!-- 双行动区：Slide 先行导读 vs 精读伴读 -->
           <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
             <button 
               @click="openSlideDeck(book)"
-              class="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-semibold rounded-xl shadow-sm shadow-orange-100 transition-all flex items-center justify-center space-x-1">
+              class="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold rounded-2xl shadow-sm shadow-orange-100 transition-all flex items-center justify-center space-x-1">
               <span>📑 智能导读 Slide</span>
             </button>
 
             <button 
               @click="openReader(book)"
-              class="flex-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition-colors flex items-center justify-center space-x-1">
+              class="flex-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-2xl border border-indigo-200 transition-colors flex items-center justify-center space-x-1">
               <span>📖 精读伴读</span>
             </button>
           </div>
         </div>
       </div>
-
-      <!-- 无搜索结果 -->
-      <div v-else class="py-20 text-center bg-white rounded-2xl border border-slate-200">
-        <p class="text-slate-400 text-base">未找到匹配的图书</p>
+      <div v-else class="py-20 text-center bg-white rounded-3xl border border-slate-200">
+        <p class="text-slate-400 text-base">未找到匹配的书籍</p>
       </div>
     </main>
 
-    <!-- 视图 2：沉浸式阅读器与原文伴读 (Reader) -->
-    <main v-if="currentView === 'reader'" class="flex-1 flex overflow-hidden">
-      <!-- 左侧章节导航目录 -->
+    <!-- 伴读正文阅读界面 -->
+    <main v-if="currentWorkspace === 'reading' && currentView === 'reader'" class="flex-1 flex overflow-hidden">
+      <!-- 左侧章节目录 -->
       <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-[calc(100vh-4rem)]">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between">
           <div class="truncate">
             <h2 class="font-bold text-slate-900 text-sm truncate" :title="currentBook?.name">{{ currentBook?.name }}</h2>
             <p class="text-xs text-slate-400">共 {{ parsedChapters.length }} 章</p>
           </div>
-          <button 
-            @click="openSlideDeck(currentBook)" 
-            class="text-xs text-orange-600 hover:text-orange-700 font-semibold px-2 py-1 bg-orange-50 rounded-lg">
-            📑 导读
+          <button @click="openSlideDeck(currentBook)" class="text-xs text-orange-600 hover:text-orange-700 font-bold px-2 py-1 bg-orange-50 rounded-lg">
+            📑 导读 Slide
           </button>
         </div>
 
@@ -181,128 +196,81 @@
           <button 
             v-for="(chap, idx) in parsedChapters" :key="idx"
             @click="selectChapter(idx)"
-            :class="currentChapterIndex === idx ? 'bg-indigo-50 text-indigo-700 font-semibold border-indigo-200' : 'text-slate-600 hover:bg-slate-50 border-transparent'"
+            :class="currentChapterIndex === idx ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-200' : 'text-slate-600 hover:bg-slate-50 border-transparent'"
             class="w-full text-left px-3 py-2.5 rounded-xl text-xs border transition-all truncate block">
             {{ chap.title }}
           </button>
         </div>
       </aside>
 
-      <!-- 中间正文阅读区域 -->
+      <!-- 中间正文 -->
       <section class="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-white overflow-y-auto relative">
-        <!-- 章节工具条 -->
         <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-10">
           <h1 class="font-bold text-slate-900 text-base truncate max-w-xl">
             {{ currentChapter?.title }}
           </h1>
 
           <div class="flex items-center space-x-3">
-            <!-- 切换模式：伴读写入读后库 vs 智学写入学习库 -->
-            <div class="bg-slate-100 p-0.5 rounded-xl flex items-center text-xs">
-              <button 
-                @click="studyMode = 'reading'"
-                :class="studyMode === 'reading' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-500'"
-                class="px-2.5 py-1 rounded-lg transition-all">📖 伴读模式 (读后库)</button>
-              <button 
-                @click="studyMode = 'study'"
-                :class="studyMode === 'study' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-500'"
-                class="px-2.5 py-1 rounded-lg transition-all">🎓 智学模式 (学习库)</button>
-            </div>
+            <button 
+              @click="triggerInteractiveQuiz(currentBook.name, currentChapter?.content)"
+              class="px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center space-x-1.5">
+              <span>🧠 启动章节智能测验</span>
+            </button>
 
-            <!-- 原文抽屉开关 -->
             <button 
               @click="showOriginalDrawer = !showOriginalDrawer"
               :class="showOriginalDrawer ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1">
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all">
               <span>📜 原文抽屉</span>
             </button>
           </div>
         </div>
 
-        <!-- 正文与交互卡片 -->
         <div class="max-w-3xl mx-auto w-full px-6 py-10 flex-1 space-y-8">
-          <!-- 划线提示悬浮条（选中文字时弹出） -->
-          <div 
-            v-if="selectedText" 
-            class="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl flex items-center space-x-3 sticky top-16 z-20 animate-fade-in">
+          <!-- 选中文字悬浮条 -->
+          <div v-if="selectedText" class="bg-slate-900 text-white p-2.5 rounded-2xl shadow-xl flex items-center space-x-3 sticky top-16 z-20">
             <span class="text-xs truncate max-w-xs text-slate-300">“{{ selectedText }}”</span>
-            <button @click="askFeynman" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-lg font-medium">💡 大白话拆解</button>
-            <button @click="saveSelectionToObsidian" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-lg font-medium">📝 存入 Obsidian</button>
+            <button @click="askFeynman" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium">💡 大白话拆解</button>
+            <button @click="saveSelectionToObsidian('reading')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium">📝 存入读后库</button>
             <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
           </div>
 
-          <!-- AI 大白话回复卡片 -->
+          <!-- 费曼回答卡片 -->
           <div v-if="feynmanAnswer" class="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 rounded-2xl p-5 relative shadow-sm">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-indigo-700 flex items-center space-x-1">
-                <span>💡 费曼大白话拆解</span>
-              </span>
+              <span class="text-xs font-bold text-indigo-700">💡 费曼大白话拆解</span>
               <button @click="feynmanAnswer = ''" class="text-slate-400 hover:text-slate-600 text-xs">✕ 关闭</button>
             </div>
-            <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{{ feynmanAnswer }}</div>
+            <div class="text-sm text-slate-800 leading-relaxed markdown-body" v-html="renderMarkdown(feynmanAnswer)"></div>
           </div>
 
-          <!-- 章节正文 -->
           <div class="reading-content text-slate-800 font-serif" @mouseup="handleTextSelect">
             <p v-for="(p, pIdx) in chapterParagraphs" :key="pIdx">{{ p }}</p>
           </div>
 
-          <!-- 本章智能测验与读后感沉淀 -->
-          <div class="pt-8 border-t border-slate-200 space-y-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="font-bold text-slate-900 text-base">🧠 本章智能测验与反思</h3>
-                <p class="text-xs text-slate-500">检验是否真正读懂，告别“假装读过”</p>
-              </div>
-              <button 
-                @click="generateChapterQuiz"
-                :disabled="isGeneratingQuiz"
-                class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
-                <svg :class="{'animate-spin': isGeneratingQuiz}" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>{{ isGeneratingQuiz ? 'AI 正在出题...' : '生成本章测验 ➔' }}</span>
-              </button>
-            </div>
-
-            <!-- 测验题展示 -->
-            <div v-if="quizResult" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
-              <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{{ quizResult }}</div>
-              <div class="pt-3 border-t border-slate-200 flex justify-end">
-                <button 
-                  @click="saveQuizToObsidian" 
-                  class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">
-                  📌 将测验错题存入 Obsidian
-                </button>
-              </div>
-            </div>
-
-            <!-- 章节翻页 -->
-            <div class="flex items-center justify-between pt-6 border-t border-slate-100">
-              <button 
-                @click="selectChapter(currentChapterIndex - 1)" 
-                :disabled="currentChapterIndex <= 0"
-                class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">
-                ◀ 上一章
-              </button>
-              <span class="text-xs text-slate-400">第 {{ currentChapterIndex + 1 }} / {{ parsedChapters.length }} 章</span>
-              <button 
-                @click="selectChapter(currentChapterIndex + 1)" 
-                :disabled="currentChapterIndex >= parsedChapters.length - 1"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40">
-                下一章 ▶
-              </button>
-            </div>
+          <!-- 翻页 -->
+          <div class="flex items-center justify-between pt-8 border-t border-slate-100">
+            <button 
+              @click="selectChapter(currentChapterIndex - 1)" 
+              :disabled="currentChapterIndex <= 0"
+              class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+              ◀ 上一章
+            </button>
+            <span class="text-xs text-slate-400">第 {{ currentChapterIndex + 1 }} / {{ parsedChapters.length }} 章</span>
+            <button 
+              @click="selectChapter(currentChapterIndex + 1)" 
+              :disabled="currentChapterIndex >= parsedChapters.length - 1"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40">
+              下一章 ▶
+            </button>
           </div>
         </div>
       </section>
 
-      <!-- 右侧：可收起的原文抽屉 (Original Text Drawer) -->
-      <aside 
-        v-if="showOriginalDrawer" 
-        class="w-96 bg-amber-50/50 border-l border-amber-200 flex flex-col h-[calc(100vh-4rem)] animate-slide-left z-20">
-        <div class="p-4 border-b border-amber-200/80 bg-amber-100/50 flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <span class="font-bold text-amber-950 text-sm">📜 原文抽屉 (对照参考)</span>
-          </div>
+      <!-- 原文抽屉 -->
+      <aside v-if="showOriginalDrawer" class="w-96 bg-amber-50/60 border-l border-amber-200 flex flex-col h-[calc(100vh-4rem)] z-20">
+        <div class="p-4 border-b border-amber-200 bg-amber-100/60 flex items-center justify-between">
+          <span class="font-bold text-amber-950 text-sm">📜 原文抽屉 (对照参考)</span>
           <button @click="showOriginalDrawer = false" class="text-amber-800 hover:text-amber-950 text-xs">✕ 收起</button>
         </div>
         <div class="p-4 overflow-y-auto flex-1 text-xs text-amber-900 leading-relaxed font-serif space-y-3">
@@ -311,39 +279,131 @@
       </aside>
     </main>
 
-    <!-- 🌟 全局模态框：先行导读 Slide 幻灯片秀 (Advance Organizer Slide Deck) -->
-    <div v-if="showSlideModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <!-- 幻灯片顶部 -->
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-            <span class="font-bold text-slate-800 text-sm">先行导读 Slide · {{ currentSlideBook?.name }}</span>
-            <span v-if="slides.length > 0" class="text-xs text-slate-400">({{ currentSlideIndex + 1 }} / {{ slides.length }})</span>
-          </div>
-          <button @click="showSlideModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕ 关闭</button>
+    <!-- ======================================================== -->
+    <!-- 模块二：🎓 智学专区 (Obsidian 学习库 136+ 资料系统研读) -->
+    <!-- ======================================================== -->
+    <main v-if="currentWorkspace === 'study'" class="flex-1 flex overflow-hidden">
+      <!-- 左侧：学科分类与主题笔记树 -->
+      <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-[calc(100vh-4rem)]">
+        <div class="p-4 border-b border-slate-100">
+          <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
+            <span>🎓 智学知识库</span>
+            <span class="text-xs text-emerald-600 font-semibold px-2 py-0.5 bg-emerald-50 rounded-full">Obsidian直通</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">涵盖数学、AI、相对论、量化、逻辑等学科</p>
         </div>
 
-        <!-- 幻灯片主体内容 -->
-        <div class="flex-1 p-8 overflow-y-auto flex items-center justify-center min-h-[400px]">
+        <div class="flex-1 overflow-y-auto p-3 space-y-4">
+          <div v-for="cat in studyCategories" :key="cat.folder" class="space-y-1">
+            <div class="px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span>{{ cat.icon }} {{ cat.title }}</span>
+              <span class="text-[10px] text-slate-400 font-normal">({{ cat.notesCount }})</span>
+            </div>
+
+            <div class="space-y-0.5 pl-2 border-l-2 border-slate-100">
+              <button 
+                v-for="n in cat.notes" :key="n.fullPath"
+                @click="openStudyNote(n)"
+                :class="activeStudyNote?.fullPath === n.fullPath ? 'bg-emerald-50 text-emerald-800 font-bold border-emerald-200' : 'text-slate-600 hover:bg-slate-50 border-transparent'"
+                class="w-full text-left px-3 py-2 rounded-xl text-xs border transition-all truncate block">
+                📄 {{ n.name }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 中间：学习资料研读与深度学习工具 -->
+      <section class="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-white overflow-y-auto">
+        <div v-if="activeStudyNote" class="flex flex-col h-full">
+          <!-- 研读工具栏 -->
+          <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-10">
+            <div>
+              <h1 class="font-bold text-slate-900 text-base truncate max-w-xl">
+                {{ activeStudyNote.name }}
+              </h1>
+              <p class="text-xs text-slate-400">所属分类: {{ activeStudyNote.relPath }}</p>
+            </div>
+
+            <!-- 智学核心行动：发起智能专项测验 -->
+            <div class="flex items-center space-x-3">
+              <button 
+                @click="triggerInteractiveQuiz(activeStudyNote.name, activeStudyNoteContent)"
+                class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-100 transition-all flex items-center space-x-1.5">
+                <span>🧠 发起本专题智能测验</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 笔记渲染区域 -->
+          <div class="max-w-4xl mx-auto w-full px-8 py-10 flex-1 space-y-6">
+            <!-- 选中文字悬浮条 -->
+            <div v-if="selectedText" class="bg-slate-900 text-white p-2.5 rounded-2xl shadow-xl flex items-center space-x-3 sticky top-16 z-20">
+              <span class="text-xs truncate max-w-xs text-slate-300">“{{ selectedText }}”</span>
+              <button @click="askFeynman" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium">💡 费曼大白话拆解</button>
+              <button @click="saveSelectionToObsidian('study')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium">🎓 存入学习库</button>
+              <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+
+            <!-- 费曼回答卡片 -->
+            <div v-if="feynmanAnswer" class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 relative shadow-sm">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-emerald-800">💡 费曼大白话拆解</span>
+                <button @click="feynmanAnswer = ''" class="text-slate-400 hover:text-slate-600 text-xs">✕ 关闭</button>
+              </div>
+              <div class="text-sm text-slate-800 leading-relaxed markdown-body" v-html="renderMarkdown(feynmanAnswer)"></div>
+            </div>
+
+            <!-- 正文 Markdown 渲染 -->
+            <div class="markdown-body text-slate-800" @mouseup="handleTextSelect" v-html="renderMarkdown(activeStudyNoteContent)"></div>
+          </div>
+        </div>
+
+        <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+          <span class="text-5xl mb-4">🎓</span>
+          <p class="font-bold text-slate-700 text-base">从左侧选择一个学习主题或笔记</p>
+          <p class="text-xs text-slate-400 mt-1">支持公式、概念解析、智能测验打分与错题沉淀</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ======================================================== -->
+    <!-- 🌟 全局模态框一：先行导读 Slide 幻灯片秀 (彻底修复版) -->
+    <!-- ======================================================== -->
+    <div v-if="showSlideModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <!-- Slide 顶栏 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+            <span class="font-bold text-slate-900 text-sm">先行导读 Slide · {{ currentSlideBook?.name }}</span>
+            <span v-if="slides.length > 0" class="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+              第 {{ currentSlideIndex + 1 }} / {{ slides.length }} 页
+            </span>
+          </div>
+          <button @click="showSlideModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕ 关闭</button>
+        </div>
+
+        <!-- Slide 主内容区 -->
+        <div class="flex-1 p-8 sm:p-12 overflow-y-auto flex items-center justify-center min-h-[420px]">
           <!-- 生成中状态 -->
           <div v-if="isLoadingSlides" class="text-center space-y-4">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
-            <p class="font-bold text-slate-800 text-base">FreeLLMAPI 正在研读全书框架与样章...</p>
-            <p class="text-xs text-slate-400">正在提炼：灵魂一句话、知识全景脉络、核心矛盾与思考题</p>
+            <p class="font-bold text-slate-900 text-base">FreeLLMAPI 正在深研全书架构与关键脉络...</p>
+            <p class="text-xs text-slate-400">严格生成 5~6 页结构化导读 Slide，提炼灵魂洞见与冲击点</p>
           </div>
 
-          <!-- 幻灯片卡片展示 -->
-          <div v-else-if="currentSlide" class="w-full max-w-2xl space-y-6 animate-fade-in">
+          <!-- 幻灯片卡片 -->
+          <div v-else-if="currentSlide" class="w-full max-w-2xl space-y-6">
             <div class="flex items-center justify-between">
-              <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-bold rounded-full">
+              <span class="px-3.5 py-1 bg-orange-100 text-orange-800 text-xs font-extrabold rounded-full">
                 {{ currentSlide.tag || '导读精粹' }}
               </span>
-              <span class="text-xs text-slate-400 font-mono">Slide #{{ currentSlideIndex + 1 }}</span>
+              <span class="text-xs text-slate-400 font-mono font-bold">SLIDE {{ currentSlideIndex + 1 }}</span>
             </div>
 
             <div>
-              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-2">
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mb-2">
                 {{ currentSlide.title }}
               </h2>
               <p v-if="currentSlide.subtitle" class="text-slate-500 text-sm font-medium">
@@ -351,19 +411,19 @@
               </p>
             </div>
 
-            <!-- 要点清单 -->
+            <!-- Bullet 要点渲染（利用 marked 杜绝任何源码出现） -->
             <div v-if="currentSlide.bullets && currentSlide.bullets.length > 0" class="space-y-3 pt-2">
               <div 
                 v-for="(b, bIdx) in currentSlide.bullets" :key="bIdx"
-                class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800 text-sm leading-relaxed flex items-start space-x-3">
-                <span class="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{{ bIdx + 1 }}</span>
-                <span>{{ b }}</span>
+                class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800 text-sm leading-relaxed flex items-start space-x-3.5 hover:bg-orange-50/30 transition-colors">
+                <span class="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-sm">{{ bIdx + 1 }}</span>
+                <div class="markdown-body flex-1" v-html="renderMarkdown(b)"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 幻灯片底部翻页与行动区 -->
+        <!-- Slide 底栏翻页与行动 -->
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <button 
@@ -380,7 +440,7 @@
             </button>
           </div>
 
-          <!-- 指示点 -->
+          <!-- 导航指示圆点 -->
           <div class="hidden sm:flex items-center space-x-1.5">
             <span 
               v-for="(_, idx) in slides" :key="idx"
@@ -389,24 +449,145 @@
               class="h-2 rounded-full cursor-pointer transition-all"></span>
           </div>
 
-          <!-- 导出与进入正文行动 -->
+          <!-- 保存与精读 -->
           <div class="flex items-center space-x-2">
             <button 
               @click="saveSlidesToObsidian" 
-              class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+              class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-colors">
               📌 存入 Obsidian
             </button>
             <button 
               @click="startReadingFromSlide"
-              class="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-100 transition-all flex items-center space-x-1">
-              <span>进入正文精读 ➔</span>
+              class="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-100 transition-all">
+              带着问题精读 ➔
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 设置模态框 (Settings Modal) -->
+    <!-- ======================================================== -->
+    <!-- 🌟 全局模态框二：交互式智能测验与成绩记录系统 -->
+    <!-- ======================================================== -->
+    <div v-if="showQuizModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- 测验顶栏 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-indigo-600"></span>
+            <span class="font-bold text-slate-900 text-sm">智能理解测验 · {{ quizTargetTitle }}</span>
+            <span v-if="quizQuestions.length > 0" class="text-xs text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full">
+              已作答 {{ answeredCount }} / {{ quizQuestions.length }}
+            </span>
+          </div>
+          <button @click="showQuizModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕ 关闭</button>
+        </div>
+
+        <!-- 题目列表与交互区 -->
+        <div class="flex-1 p-6 sm:p-8 overflow-y-auto space-y-6">
+          <div v-if="isLoadingQuiz" class="py-16 text-center space-y-3">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent"></div>
+            <p class="font-bold text-slate-900 text-sm">AI 正在深度研读本篇核心逻辑，生成针对性考题...</p>
+          </div>
+
+          <!-- 交互式题目卡片 -->
+          <div v-else-if="quizQuestions.length > 0" class="space-y-6">
+            <div 
+              v-for="(q, qIdx) in quizQuestions" :key="q.id"
+              class="p-6 rounded-3xl border transition-all"
+              :class="q.userSelected !== undefined ? (q.userSelected === q.answer ? 'bg-emerald-50/40 border-emerald-200' : 'bg-rose-50/40 border-rose-200') : 'bg-slate-50/60 border-slate-200'">
+              
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <h4 class="font-bold text-slate-900 text-base leading-snug">
+                  <span class="text-indigo-600 mr-1.5 font-black">#{{ qIdx + 1 }}.</span>
+                  {{ q.question }}
+                </h4>
+                <span 
+                  v-if="q.userSelected !== undefined"
+                  :class="q.userSelected === q.answer ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                  class="px-2.5 py-0.5 text-xs font-bold rounded-full shrink-0">
+                  {{ q.userSelected === q.answer ? '✅ 正确 (+25分)' : '❌ 答错' }}
+                </span>
+              </div>
+
+              <!-- 4个选项按钮 -->
+              <div class="space-y-2.5">
+                <button 
+                  v-for="(opt, oIdx) in q.options" :key="oIdx"
+                  @click="handleSelectOption(qIdx, oIdx)"
+                  :disabled="q.userSelected !== undefined"
+                  :class="getOptionClass(q, oIdx)"
+                  class="w-full text-left p-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-between">
+                  <span>{{ opt }}</span>
+                  <span v-if="q.userSelected !== undefined && oIdx === q.answer" class="text-emerald-700 font-bold text-xs">✓ 正确答案</span>
+                </button>
+              </div>
+
+              <!-- 解析展开区 -->
+              <div v-if="q.userSelected !== undefined" class="mt-4 pt-4 border-t border-slate-200/80 text-xs leading-relaxed text-slate-700">
+                <span class="font-bold text-slate-900 block mb-1">💡 深度解析与机制推导：</span>
+                <p>{{ q.explanation }}</p>
+              </div>
+            </div>
+
+            <!-- 成绩结算卡 (作答完毕时呈现) -->
+            <div v-if="answeredCount === quizQuestions.length" class="p-6 bg-gradient-to-r from-indigo-900 to-violet-900 text-white rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <div class="text-xs text-indigo-200 font-medium">本次测验成绩结算</div>
+                <div class="text-3xl font-black mt-1">
+                  {{ quizScore }} 分 
+                  <span class="text-sm font-normal text-indigo-200">({{ correctCount }} / {{ quizQuestions.length }} 正确)</span>
+                </div>
+                <p class="text-xs text-indigo-300 mt-1">
+                  {{ quizScore >= 80 ? '🌟 融会贯通！核心机制掌握非常扎实' : '📖 建议针对解析中的逻辑脉络重温重点段落' }}
+                </p>
+              </div>
+
+              <button 
+                @click="recordQuizScoreAndSaveObsidian"
+                class="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all shrink-0">
+                📌 将成绩与错题存入 Obsidian
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 🌟 全局模态框三：历史测验战绩榜单 -->
+    <!-- ======================================================== -->
+    <div v-if="showScoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-slate-900 text-base">📊 智能测验战绩历史</h3>
+          <button @click="showScoreModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+
+        <div v-if="scoreHistory.length > 0" class="max-h-[60vh] overflow-y-auto space-y-3">
+          <div 
+            v-for="s in scoreHistory" :key="s.id"
+            class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm">{{ s.title }}</h4>
+              <p class="text-xs text-slate-400 mt-0.5">{{ s.date }} · 共 {{ s.total }} 题</p>
+            </div>
+            <div class="text-right">
+              <span 
+                :class="s.score >= 80 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200'"
+                class="px-3 py-1 rounded-xl text-sm font-black border inline-block">
+                {{ s.score }} 分
+              </span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="py-12 text-center text-slate-400 text-sm">
+          暂无测验记录，在伴读或智学专区点击“智能测验”即可开启测验并自动计分！
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统设置 -->
     <div v-if="showSettings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-lg rounded-3xl shadow-xl p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -417,23 +598,19 @@
         <div class="space-y-4 text-xs">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">📚 电子书库路径 (OneDrive)</label>
-            <input v-model="config.ebookDir" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+            <input v-model="config.ebookDir" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">📖 Obsidian 读后库路径</label>
-            <input v-model="config.readingVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+            <input v-model="config.readingVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">🎓 Obsidian 学习库路径</label>
-            <input v-model="config.studyVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+            <input v-model="config.studyVault" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">🤖 FreeLLMAPI 接口地址</label>
-            <input v-model="config.apiBaseUrl" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">🔑 FreeLLMAPI Key</label>
-            <input v-model="config.apiKey" type="password" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800">
+            <input v-model="config.apiBaseUrl" type="text" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
           </div>
         </div>
 
@@ -444,8 +621,8 @@
       </div>
     </div>
 
-    <!-- 底部状态小提示 (Toast) -->
-    <div v-if="toastMessage" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center space-x-2 animate-bounce">
+    <!-- 提示条 -->
+    <div v-if="toastMessage" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce">
       <span>{{ toastMessage }}</span>
     </div>
 
@@ -456,12 +633,14 @@
 
     createApp({
       setup() {
-        const currentView = ref('bookshelf');
+        const currentWorkspace = ref('reading'); // 'reading' (书库) or 'study' (学习库)
+        const currentView = ref('bookshelf'); // 'bookshelf' or 'reader'
         const books = ref([]);
         const isLoadingBooks = ref(false);
         const searchQuery = ref('');
         const selectedExt = ref('');
         const showSettings = ref(false);
+        const showScoreModal = ref(false);
         const toastMessage = ref('');
 
         const config = ref({
@@ -473,16 +652,18 @@
           model: 'auto'
         });
 
-        // 伴读与阅读状态
+        // 伴读模式状态
         const currentBook = ref(null);
         const parsedChapters = ref([]);
         const currentChapterIndex = ref(0);
         const showOriginalDrawer = ref(false);
-        const studyMode = ref('reading'); // 'reading' (读后库) or 'study' (学习库)
         const selectedText = ref('');
         const feynmanAnswer = ref('');
-        const isGeneratingQuiz = ref(false);
-        const quizResult = ref('');
+
+        // 智学专区状态
+        const studyCategories = ref([]);
+        const activeStudyNote = ref(null);
+        const activeStudyNoteContent = ref('');
 
         // 导读 Slide 状态
         const showSlideModal = ref(false);
@@ -491,9 +672,25 @@
         const currentSlideIndex = ref(0);
         const isLoadingSlides = ref(false);
 
+        // 交互测验系统状态
+        const showQuizModal = ref(false);
+        const isLoadingQuiz = ref(false);
+        const quizTargetTitle = ref('');
+        const quizQuestions = ref([]);
+        const scoreHistory = ref([]);
+
         const showToast = (msg) => {
           toastMessage.value = msg;
-          setTimeout(() => toastMessage.value = '', 3000);
+          setTimeout(() => toastMessage.value = '', 3500);
+        };
+
+        const renderMarkdown = (text) => {
+          if (!text) return '';
+          try {
+            return marked.parse(text);
+          } catch(e) {
+            return text;
+          }
         };
 
         const loadConfig = async () => {
@@ -514,6 +711,7 @@
             showSettings.value = false;
             showToast('✅ 设置已保存');
             loadBooks();
+            loadStudyTopics();
           } catch(e) {
             alert('保存失败: ' + e.message);
           }
@@ -529,6 +727,35 @@
             console.error('加载图书失败:', e);
           } finally {
             isLoadingBooks.value = false;
+          }
+        };
+
+        const loadStudyTopics = async () => {
+          try {
+            const res = await fetch('/api/study/topics');
+            const data = await res.json();
+            if (data.categories) studyCategories.value = data.categories;
+          } catch(e) {
+            console.error('加载学习主题失败:', e);
+          }
+        };
+
+        const loadScoreHistory = async () => {
+          try {
+            const res = await fetch('/api/study/scores');
+            const data = await res.json();
+            if (data.scores) scoreHistory.value = data.scores;
+          } catch(e) {}
+        };
+
+        const totalStudyNotesCount = computed(() => {
+          return studyCategories.value.reduce((sum, c) => sum + (c.notesCount || 0), 0);
+        });
+
+        const switchWorkspace = (ws) => {
+          currentWorkspace.value = ws;
+          if (ws === 'reading') {
+            if (!currentBook.value) currentView.value = 'bookshelf';
           }
         };
 
@@ -570,7 +797,7 @@
               body: JSON.stringify({
                 bookTitle: book.name,
                 author: book.folder,
-                sampleText: `本书来自 ${book.folder}，格式 ${book.ext}，大小 ${formatFileSize(book.size)}`
+                sampleText: `本书来自文件夹 ${book.folder}，格式 ${book.ext}`
               })
             });
             const data = await res.json();
@@ -581,7 +808,7 @@
             }
           } catch (e) {
             slides.value = [
-              { tag: '导读速览', title: book.name, subtitle: '开启精读', bullets: ['一键进入沉浸阅读', '支持原文抽屉与 AI 问答'] }
+              { tag: '灵魂速览', title: book.name, subtitle: '开启精读', bullets: ['一键进入沉浸阅读', '支持原文抽屉与 AI 问答'] }
             ];
           } finally {
             isLoadingSlides.value = false;
@@ -606,17 +833,16 @@
         const saveSlidesToObsidian = async () => {
           if (!currentSlideBook.value || slides.value.length === 0) return;
           const bookName = currentSlideBook.value.name;
-          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
 
-          let mdContent = `# 📑 《${bookName}》· 智能导读全景 Slide\n\n`;
-          mdContent += `> 生成时间: ${new Date().toLocaleString()} | 书库源: [[${bookName}]]\n\n`;
+          let md = `# 📑 《${bookName}》· 智能导读全景 Slide\n\n`;
+          md += `> 生成时间: ${new Date().toLocaleString()} | 书库源: [[${bookName}]]\n\n`;
           slides.value.forEach((s, idx) => {
-            mdContent += `### Slide ${idx + 1}: ${s.title}\n`;
-            if (s.subtitle) mdContent += `*${s.subtitle}*\n\n`;
+            md += `### Slide ${idx + 1}: ${s.title}\n`;
+            if (s.subtitle) md += `*${s.subtitle}*\n\n`;
             if (s.bullets) {
-              s.bullets.forEach(b => mdContent += `- ${b}\n`);
+              s.bullets.forEach(b => md += `- ${b}\n`);
             }
-            mdContent += `\n---\n\n`;
+            md += `\n---\n\n`;
           });
 
           try {
@@ -624,26 +850,25 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                vaultType: targetVault,
-                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
+                vaultType: 'reading',
+                subfolder: bookName,
                 fileName: `${bookName}_智能导读Slide`,
-                content: mdContent
+                content: md
               })
             });
-            showToast(`✅ Slide 已沉淀至 Obsidian ${targetVault === 'reading' ? '读后库' : '学习库'}！`);
+            showToast(`✅ Slide 已沉淀至 Obsidian 读后库！`);
           } catch (e) {
             alert('存入失败: ' + e.message);
           }
         };
 
-        // 🌟 打开阅读器并解析
+        // 🌟 打开图书精读
         const openReader = async (book) => {
           currentBook.value = book;
           parsedChapters.value = [];
           currentChapterIndex.value = 0;
           currentView.value = 'reader';
           feynmanAnswer.value = '';
-          quizResult.value = '';
 
           try {
             const res = await fetch(`/api/book/file?path=${encodeURIComponent(book.fullPath)}`);
@@ -664,23 +889,18 @@
           const chapters = [];
           let currentTitle = title;
           let currentBody = [];
-
           const chapterRegex = /^\s*(第[0-9一二三四五六七八九十百千]+[章回卷节部篇]|Chapter\s+[0-9]+|[0-9]{1,3}\s+)/i;
 
           for (const line of lines) {
             if (chapterRegex.test(line) && line.trim().length < 40) {
-              if (currentBody.length > 0) {
-                chapters.push({ title: currentTitle, content: currentBody.join('\n') });
-              }
+              if (currentBody.length > 0) chapters.push({ title: currentTitle, content: currentBody.join('\n') });
               currentTitle = line.trim();
               currentBody = [];
             } else {
               currentBody.push(line);
             }
           }
-          if (currentBody.length > 0) {
-            chapters.push({ title: currentTitle, content: currentBody.join('\n') });
-          }
+          if (currentBody.length > 0) chapters.push({ title: currentTitle, content: currentBody.join('\n') });
           parsedChapters.value = chapters.length > 0 ? chapters : [{ title: title, content: text }];
         };
 
@@ -742,47 +962,58 @@
           if (idx >= 0 && idx < parsedChapters.value.length) {
             currentChapterIndex.value = idx;
             feynmanAnswer.value = '';
-            quizResult.value = '';
           }
         };
 
-        // 文本划线交互
+        // 🌟 打开 Obsidian 智学笔记
+        const openStudyNote = async (note) => {
+          activeStudyNote.value = note;
+          activeStudyNoteContent.value = '正在加载笔记...';
+          feynmanAnswer.value = '';
+          try {
+            const res = await fetch(`/api/study/note?path=${encodeURIComponent(note.fullPath)}`);
+            activeStudyNoteContent.value = await res.text();
+          } catch(e) {
+            activeStudyNoteContent.value = '读取笔记失败: ' + e.message;
+          }
+        };
+
+        // 划线与费曼交互
         const handleTextSelect = () => {
           const sel = window.getSelection().toString().trim();
-          if (sel.length > 2) {
-            selectedText.value = sel;
-          }
+          if (sel.length > 2) selectedText.value = sel;
         };
 
         const askFeynman = async () => {
           if (!selectedText.value) return;
-          feynmanAnswer.value = '正在思考，用费曼大白话拆解中...';
+          feynmanAnswer.value = '正在用费曼学习法大白话拆解中...';
           try {
             const res = await fetch('/api/ai/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 messages: [
-                  { role: 'system', content: '你是费曼学习法导师。请用最通俗易懂的“大白话”、生活中的生动比方，拆解用户选中的这段文字或概念，直击本质，两百字内。' },
-                  { role: 'user', content: `请用大白话解释这段话：“${selectedText.value}”` }
+                  { role: 'system', content: '你是费曼学习法大师。请用最生动通俗的大白话和贴近日常的比方，拆解用户选中的专业概念或语句，直击本质，两百字内。' },
+                  { role: 'user', content: `请用费曼大白话拆解：“${selectedText.value}”` }
                 ]
               })
             });
             const data = await res.json();
             feynmanAnswer.value = data.reply || '解析完成';
           } catch(e) {
-            feynmanAnswer.value = '请求失败: ' + e.message;
+            feynmanAnswer.value = '解析失败: ' + e.message;
           }
         };
 
-        const saveSelectionToObsidian = async () => {
-          if (!selectedText.value || !currentBook.value) return;
-          const bookName = currentBook.value.name;
-          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
+        const saveSelectionToObsidian = async (targetVault) => {
+          if (!selectedText.value) return;
+          const isStudy = targetVault === 'study';
+          const targetName = isStudy ? activeStudyNote.value?.name : currentBook.value?.name;
+          if (!targetName) return;
 
-          let note = `### 摘录 (${currentChapter.value?.title || '正文'})\n> ${selectedText.value}\n\n`;
+          let note = `### 💡 核心摘录与理解\n> ${selectedText.value}\n\n`;
           if (feynmanAnswer.value) {
-            note += `**💡 费曼大白话解析**:\n${feynmanAnswer.value}\n\n`;
+            note += `**费曼通俗解读**:\n${feynmanAnswer.value}\n\n`;
           }
 
           try {
@@ -791,65 +1022,128 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 vaultType: targetVault,
-                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
-                fileName: `${bookName}_伴读随记`,
+                subfolder: isStudy ? '_当前学习' : targetName,
+                fileName: `${targetName}_精读手记`,
                 content: note,
                 append: true
               })
             });
-            showToast(`✅ 划线笔记已追加至 Obsidian！`);
+            showToast(`✅ 已追加至 Obsidian ${isStudy ? '学习库' : '读后库'}！`);
             selectedText.value = '';
           } catch(e) {
             alert('保存失败: ' + e.message);
           }
         };
 
-        const generateChapterQuiz = async () => {
-          if (!currentChapter.value) return;
-          isGeneratingQuiz.value = true;
-          quizResult.value = '';
+        // 🌟 交互式智能测验触发器
+        const triggerInteractiveQuiz = async (title, content) => {
+          quizTargetTitle.value = title;
+          quizQuestions.value = [];
+          showQuizModal.value = true;
+          isLoadingQuiz.value = true;
 
           try {
-            const res = await fetch('/api/ai/chat', {
+            const res = await fetch('/api/ai/interactive-quiz', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                messages: [
-                  { role: 'system', content: '你是读书测验导师。请根据本章内容出 3 道简明、直击逻辑要点的理解测验题（附简明参考答案与解析），检验读者是否真正消化。' },
-                  { role: 'user', content: `章节：${currentChapter.value.title}\n\n内容前2000字：\n${currentChapter.value.content.slice(0, 2000)}` }
-                ]
-              })
+              body: JSON.stringify({ title, content: (content || '').slice(0, 3000) })
             });
             const data = await res.json();
-            quizResult.value = data.reply;
-          } catch(e) {
-            quizResult.value = '出题失败: ' + e.message;
+            if (data.questions && data.questions.length > 0) {
+              quizQuestions.value = data.questions.map(q => ({ ...q, userSelected: undefined }));
+            }
+          } catch (e) {
+            alert('测验生成失败: ' + e.message);
           } finally {
-            isGeneratingQuiz.value = false;
+            isLoadingQuiz.value = false;
           }
         };
 
-        const saveQuizToObsidian = async () => {
-          if (!quizResult.value || !currentBook.value) return;
-          const bookName = currentBook.value.name;
-          const targetVault = studyMode.value === 'study' ? 'study' : 'reading';
+        const handleSelectOption = (qIdx, oIdx) => {
+          if (quizQuestions.value[qIdx].userSelected !== undefined) return;
+          quizQuestions.value[qIdx].userSelected = oIdx;
+        };
 
-          const note = `### 🧠 测验题卡 (${currentChapter.value?.title})\n${quizResult.value}\n\n---\n`;
+        const getOptionClass = (q, oIdx) => {
+          if (q.userSelected === undefined) {
+            return 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 cursor-pointer';
+          }
+          if (oIdx === q.answer) {
+            return 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold';
+          }
+          if (q.userSelected === oIdx && oIdx !== q.answer) {
+            return 'bg-rose-50 border-rose-500 text-rose-900 line-through';
+          }
+          return 'bg-white border-slate-100 text-slate-400 opacity-60';
+        };
+
+        const answeredCount = computed(() => {
+          return quizQuestions.value.filter(q => q.userSelected !== undefined).length;
+        });
+
+        const correctCount = computed(() => {
+          return quizQuestions.value.filter(q => q.userSelected === q.answer).length;
+        });
+
+        const quizScore = computed(() => {
+          if (quizQuestions.value.length === 0) return 0;
+          return Math.round((correctCount.value / quizQuestions.value.length) * 100);
+        });
+
+        // 记录成绩并沉淀至 Obsidian
+        const recordQuizScoreAndSaveObsidian = async () => {
+          const isStudy = currentWorkspace.value === 'study';
+          const targetTitle = quizTargetTitle.value;
+          const score = quizScore.value;
+
+          // 1. 记录本地战绩
+          await fetch('/api/study/record-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: targetTitle,
+              score: score,
+              total: quizQuestions.value.length,
+              correct: correctCount.value
+            })
+          });
+          loadScoreHistory();
+
+          // 2. 生成错题本与总结 Markdown
+          let md = `\n\n### 🧠 智能测验报告 (${new Date().toLocaleDateString()})\n`;
+          md += `- **得分**: **${score} 分** (${correctCount.value} / ${quizQuestions.value.length} 题正确)\n`;
+          md += `- **掌握评估**: ${score >= 80 ? '🌟 精准掌握' : '📖 需巩固重点'}\n\n`;
+
+          const wrongQuestions = quizQuestions.value.filter(q => q.userSelected !== q.answer);
+          if (wrongQuestions.length > 0) {
+            md += `#### ❌ 错题与考点剖析\n`;
+            wrongQuestions.forEach((wq, i) => {
+              md += `${i + 1}. **${wq.question}**\n`;
+              md += `   - 你的选择: \`${wq.options[wq.userSelected] || '未作答'}\`\n`;
+              md += `   - 正确答案: **${wq.options[wq.answer]}**\n`;
+              md += `   - 机制解析: ${wq.explanation}\n\n`;
+            });
+          } else {
+            md += `*全部答对！完美通过本章核心逻辑测验！*\n\n`;
+          }
+
+          // 3. 保存入 Obsidian 对应的库
           try {
             await fetch('/api/obsidian/save', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                vaultType: targetVault,
-                subfolder: targetVault === 'reading' ? bookName : '_当前学习',
-                fileName: `${bookName}_章节测验卡`,
-                content: note,
+                vaultType: isStudy ? 'study' : 'reading',
+                subfolder: isStudy ? '_当前学习' : targetTitle,
+                fileName: `${targetTitle}_测验战绩与错题本`,
+                content: md,
                 append: true
               })
             });
-            showToast(`✅ 测验卡已追加至 Obsidian！`);
+            showToast(`✅ 测验战绩与错题已成功存入 Obsidian ${isStudy ? '学习库' : '读后库'}！`);
+            showQuizModal.value = false;
           } catch(e) {
-            alert('保存失败: ' + e.message);
+            alert('存入失败: ' + e.message);
           }
         };
 
@@ -865,6 +1159,8 @@
         onMounted(() => {
           loadConfig();
           loadBooks();
+          loadStudyTopics();
+          loadScoreHistory();
           window.addEventListener('keydown', handleKeyDown);
         });
 
@@ -873,6 +1169,7 @@
         });
 
         return {
+          currentWorkspace,
           currentView,
           books,
           isLoadingBooks,
@@ -884,9 +1181,19 @@
           formatFileSize,
           loadBooks,
           showSettings,
+          showScoreModal,
+          scoreHistory,
           config,
           saveSettings,
           toastMessage,
+          switchWorkspace,
+          renderMarkdown,
+          // 智学专区
+          studyCategories,
+          totalStudyNotesCount,
+          activeStudyNote,
+          activeStudyNoteContent,
+          openStudyNote,
           // 导读 Slide
           showSlideModal,
           currentSlideBook,
@@ -908,16 +1215,23 @@
           openReader,
           selectChapter,
           showOriginalDrawer,
-          studyMode,
           selectedText,
           handleTextSelect,
           feynmanAnswer,
           askFeynman,
           saveSelectionToObsidian,
-          isGeneratingQuiz,
-          quizResult,
-          generateChapterQuiz,
-          saveQuizToObsidian
+          // 交互测验
+          showQuizModal,
+          isLoadingQuiz,
+          quizTargetTitle,
+          quizQuestions,
+          triggerInteractiveQuiz,
+          handleSelectOption,
+          getOptionClass,
+          answeredCount,
+          correctCount,
+          quizScore,
+          recordQuizScoreAndSaveObsidian
         };
       }
     }).mount('#app');
