@@ -32,7 +32,7 @@
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        <!-- Logo 与当前工作区提示 -->
+        <!-- Logo -->
         <div class="flex items-center space-x-3 cursor-pointer" @click="currentWorkspace = 'reading'">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-100">
             智
@@ -40,7 +40,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="font-bold text-lg text-slate-900 tracking-tight">智学伴读</span>
-              <span class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">本地直读双轨系统</span>
+              <span class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">本地双轨系统</span>
             </div>
             <p class="text-xs text-slate-500 truncate max-w-xs sm:max-w-md">
               {{ currentWorkspace === 'reading' ? '书库: OneDrive (' + books.length + '本)' : '学习库: Obsidian (' + totalStudyNotesCount + '篇资料)' }}
@@ -98,7 +98,6 @@
     <!-- 模块一：📖 伴读书架模式 (OneDrive 电子书直读) -->
     <!-- ======================================================== -->
     <main v-if="currentWorkspace === 'reading' && currentView === 'bookshelf'" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- 搜索与筛选器 -->
       <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm mb-8 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="relative flex-1">
@@ -157,7 +156,6 @@
             </p>
           </div>
 
-          <!-- 双行动区：Slide 先行导读 vs 精读伴读 -->
           <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
             <button 
               @click="openSlideDeck(book)"
@@ -212,9 +210,9 @@
 
           <div class="flex items-center space-x-3">
             <button 
-              @click="triggerInteractiveQuiz(currentBook.name, currentChapter?.content)"
-              class="px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center space-x-1.5">
-              <span>🧠 启动章节智能测验</span>
+              @click="triggerInteractiveQuiz(currentBook.name + ' - ' + currentChapter?.title, currentChapter?.content)"
+              class="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center space-x-1.5">
+              <span>🧠 启动章节智能测验 (4~5题)</span>
             </button>
 
             <button 
@@ -235,7 +233,6 @@
             <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
           </div>
 
-          <!-- 费曼回答卡片 -->
           <div v-if="feynmanAnswer" class="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 rounded-2xl p-5 relative shadow-sm">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-indigo-700">💡 费曼大白话拆解</span>
@@ -248,7 +245,6 @@
             <p v-for="(p, pIdx) in chapterParagraphs" :key="pIdx">{{ p }}</p>
           </div>
 
-          <!-- 翻页 -->
           <div class="flex items-center justify-between pt-8 border-t border-slate-100">
             <button 
               @click="selectChapter(currentChapterIndex - 1)" 
@@ -280,19 +276,34 @@
     </main>
 
     <!-- ======================================================== -->
-    <!-- 模块二：🎓 智学专区 (Obsidian 学习库 136+ 资料系统研读) -->
+    <!-- 模块二：🎓 智学专区 (带引入学习资料 + AI 研讨沉淀) -->
     <!-- ======================================================== -->
     <main v-if="currentWorkspace === 'study'" class="flex-1 flex overflow-hidden">
       <!-- 左侧：学科分类与主题笔记树 -->
       <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-[calc(100vh-4rem)]">
-        <div class="p-4 border-b border-slate-100">
-          <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
-            <span>🎓 智学知识库</span>
-            <span class="text-xs text-emerald-600 font-semibold px-2 py-0.5 bg-emerald-50 rounded-full">Obsidian直通</span>
-          </h2>
-          <p class="text-xs text-slate-400 mt-1">涵盖数学、AI、相对论、量化、逻辑等学科</p>
+        <div class="p-4 border-b border-slate-100 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
+              <span>🎓 智学知识库</span>
+              <span class="text-xs text-emerald-600 font-semibold px-2 py-0.5 bg-emerald-50 rounded-full">Obsidian直通</span>
+            </h2>
+            <button 
+              @click="loadStudyTopics" 
+              class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100" title="刷新目录">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+          </div>
+
+          <!-- 🌟 新增：引入学习资料核心行动按钮 -->
+          <button 
+            @click="showImportModal = true"
+            class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-black shadow-md shadow-emerald-100 transition-all flex items-center justify-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>➕ 引入学习资料 (URL / 书籍)</span>
+          </button>
         </div>
 
+        <!-- 目录列表 -->
         <div class="flex-1 overflow-y-auto p-3 space-y-4">
           <div v-for="cat in studyCategories" :key="cat.folder" class="space-y-1">
             <div class="px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
@@ -313,50 +324,134 @@
         </div>
       </aside>
 
-      <!-- 中间：学习资料研读与深度学习工具 -->
-      <section class="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-white overflow-y-auto">
-        <div v-if="activeStudyNote" class="flex flex-col h-full">
-          <!-- 研读工具栏 -->
-          <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-10">
-            <div>
-              <h1 class="font-bold text-slate-900 text-base truncate max-w-xl">
-                {{ activeStudyNote.name }}
-              </h1>
-              <p class="text-xs text-slate-400">所属分类: {{ activeStudyNote.relPath }}</p>
+      <!-- 中间与右侧：学习笔记正文 + 🤖 AI 研讨探讨室 -->
+      <section class="flex-1 flex h-[calc(100vh-4rem)] bg-white overflow-hidden">
+        <div v-if="activeStudyNote" class="flex-1 flex overflow-hidden">
+          
+          <!-- 左侧：正文阅读区域 -->
+          <div class="flex-1 flex flex-col h-full border-r border-slate-100 overflow-y-auto">
+            <!-- 顶栏 -->
+            <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-10">
+              <div>
+                <h1 class="font-bold text-slate-900 text-base truncate max-w-lg">
+                  {{ activeStudyNote.name }}
+                </h1>
+                <p class="text-xs text-slate-400">路径: {{ activeStudyNote.relPath }}</p>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <button 
+                  @click="triggerInteractiveQuiz(activeStudyNote.name, activeStudyNoteContent)"
+                  class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-100 transition-all flex items-center space-x-1">
+                  <span>🧠 专项测验 (4~5题)</span>
+                </button>
+              </div>
             </div>
 
-            <!-- 智学核心行动：发起智能专项测验 -->
-            <div class="flex items-center space-x-3">
+            <!-- Markdown 内容 -->
+            <div class="max-w-3xl mx-auto w-full px-8 py-8 space-y-6">
+              <div v-if="selectedText" class="bg-slate-900 text-white p-2.5 rounded-2xl shadow-xl flex items-center space-x-3 sticky top-16 z-20">
+                <span class="text-xs truncate max-w-xs text-slate-300">“{{ selectedText }}”</span>
+                <button @click="askFeynman" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium">💡 费曼拆解</button>
+                <button @click="sendSelectedToChat" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium">💬 发送到AI探讨</button>
+                <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
+              </div>
+
+              <div v-if="feynmanAnswer" class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 relative shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold text-emerald-800">💡 费曼大白话拆解</span>
+                  <button @click="feynmanAnswer = ''" class="text-slate-400 hover:text-slate-600 text-xs">✕ 关闭</button>
+                </div>
+                <div class="text-sm text-slate-800 leading-relaxed markdown-body" v-html="renderMarkdown(feynmanAnswer)"></div>
+              </div>
+
+              <div class="markdown-body text-slate-800" @mouseup="handleTextSelect" v-html="renderMarkdown(activeStudyNoteContent)"></div>
+            </div>
+          </div>
+
+          <!-- 🌟 右侧：🤖 AI 学习研讨室（实时问答与沉淀进笔记） -->
+          <div class="w-96 bg-slate-50 border-l border-slate-200 flex flex-col h-full">
+            <!-- 研讨室顶栏 -->
+            <div class="p-3.5 border-b border-slate-200 bg-white flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-bold text-slate-900 text-xs sm:text-sm">🤖 AI 学习探讨室</span>
+              </div>
               <button 
-                @click="triggerInteractiveQuiz(activeStudyNote.name, activeStudyNoteContent)"
-                class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-100 transition-all flex items-center space-x-1.5">
-                <span>🧠 发起本专题智能测验</span>
+                v-if="chatMessages.length > 0"
+                @click="appendAllChatToNote" 
+                class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-[11px] font-bold transition-colors">
+                💾 全部沉淀
               </button>
             </div>
-          </div>
 
-          <!-- 笔记渲染区域 -->
-          <div class="max-w-4xl mx-auto w-full px-8 py-10 flex-1 space-y-6">
-            <!-- 选中文字悬浮条 -->
-            <div v-if="selectedText" class="bg-slate-900 text-white p-2.5 rounded-2xl shadow-xl flex items-center space-x-3 sticky top-16 z-20">
-              <span class="text-xs truncate max-w-xs text-slate-300">“{{ selectedText }}”</span>
-              <button @click="askFeynman" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium">💡 费曼大白话拆解</button>
-              <button @click="saveSelectionToObsidian('study')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium">🎓 存入学习库</button>
-              <button @click="selectedText = ''" class="text-slate-400 hover:text-white text-xs">✕</button>
-            </div>
-
-            <!-- 费曼回答卡片 -->
-            <div v-if="feynmanAnswer" class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 relative shadow-sm">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-emerald-800">💡 费曼大白话拆解</span>
-                <button @click="feynmanAnswer = ''" class="text-slate-400 hover:text-slate-600 text-xs">✕ 关闭</button>
+            <!-- 问答消息历史列表 -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatContainer">
+              <div v-if="chatMessages.length === 0" class="text-center py-10 space-y-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-lg font-bold">💬</div>
+                <p class="text-xs text-slate-500 font-medium">针对当前资料，向 AI 私塾导师提问</p>
+                <div class="space-y-1.5 pt-2">
+                  <button @click="sendQuickPrompt('请用大白话提炼本篇资料的3个核心机制与关键结论')" class="w-full text-left p-2 rounded-xl bg-white border border-slate-200 text-[11px] text-slate-600 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                    📌 提炼本篇 3 个核心机制
+                  </button>
+                  <button @click="sendQuickPrompt('这套理论或模型在现实场景中如何实战运用？举具体案例说明')" class="w-full text-left p-2 rounded-xl bg-white border border-slate-200 text-[11px] text-slate-600 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                    💡 现实实战落地如何运用？
+                  </button>
+                  <button @click="sendQuickPrompt('请用批判性思维，指出本文论述的核心假设与潜在局限是什么？')" class="w-full text-left p-2 rounded-xl bg-white border border-slate-200 text-[11px] text-slate-600 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                    🔍 本文有哪些潜在盲区与局限？
+                  </button>
+                </div>
               </div>
-              <div class="text-sm text-slate-800 leading-relaxed markdown-body" v-html="renderMarkdown(feynmanAnswer)"></div>
+
+              <!-- 气泡流 -->
+              <div v-for="(m, mIdx) in chatMessages" :key="mIdx" class="space-y-1">
+                <!-- 用户提问 -->
+                <div v-if="m.role === 'user'" class="flex justify-end">
+                  <div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tr-none text-xs max-w-[85%] shadow-sm leading-relaxed">
+                    {{ m.content }}
+                  </div>
+                </div>
+
+                <!-- AI 回答 -->
+                <div v-else class="flex flex-col items-start space-y-1.5">
+                  <div class="bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-none text-xs text-slate-800 leading-relaxed shadow-sm w-full markdown-body" v-html="renderMarkdown(m.content)"></div>
+                  
+                  <!-- 沉淀按钮 -->
+                  <div class="flex items-center space-x-2 pl-1">
+                    <button 
+                      @click="appendSingleChatToNote(mIdx)" 
+                      class="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center space-x-1 py-0.5 px-2 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors">
+                      <span>📌 沉淀此问答至 Obsidian 笔记</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="isSendingChat" class="flex items-center space-x-2 text-xs text-slate-400 italic">
+                <span class="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-600 border-t-transparent"></span>
+                <span>AI 正在研读正文推导解答...</span>
+              </div>
             </div>
 
-            <!-- 正文 Markdown 渲染 -->
-            <div class="markdown-body text-slate-800" @mouseup="handleTextSelect" v-html="renderMarkdown(activeStudyNoteContent)"></div>
+            <!-- 输入区域 -->
+            <div class="p-3 bg-white border-t border-slate-200 space-y-2">
+              <div class="relative">
+                <textarea 
+                  v-model="chatInput" 
+                  @keydown.enter.prevent="handleChatEnter"
+                  rows="2" 
+                  placeholder="针对本篇提问 (按 Enter 发送)..." 
+                  class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white resize-none"></textarea>
+                <button 
+                  @click="sendChatMessage" 
+                  :disabled="!chatInput.trim() || isSendingChat"
+                  class="absolute right-2 bottom-2 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition-colors">
+                  发送
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
 
         <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
@@ -368,11 +463,120 @@
     </main>
 
     <!-- ======================================================== -->
-    <!-- 🌟 全局模态框一：先行导读 Slide 幻灯片秀 (彻底修复版) -->
+    <!-- 🌟 全局模态框：引入学习资料弹窗 (URL 抓取 / 书库引入) -->
+    <!-- ======================================================== -->
+    <div v-if="showImportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- 弹窗顶栏 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+            <span>📥 引入学习资料至智学库</span>
+          </h3>
+          <button @click="showImportModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+
+        <!-- 3个引入来源切换 -->
+        <div class="flex border-b border-slate-200 bg-slate-50/50 p-1 text-xs font-bold">
+          <button 
+            @click="importTab = 'url'" 
+            :class="importTab === 'url' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'"
+            class="flex-1 py-2 rounded-xl transition-all">
+            🌐 网页文章 (URL 抓取)
+          </button>
+          <button 
+            @click="importTab = 'book'" 
+            :class="importTab === 'book' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'"
+            class="flex-1 py-2 rounded-xl transition-all">
+            📚 从 OneDrive 书库引入
+          </button>
+          <button 
+            @click="importTab = 'text'" 
+            :class="importTab === 'text' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'"
+            class="flex-1 py-2 rounded-xl transition-all">
+            ✍️ 手动粘贴资料
+          </button>
+        </div>
+
+        <!-- 引入表单主体 -->
+        <div class="p-6 space-y-4 text-xs">
+          <!-- 目标分类选择器 -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">📁 存入 Obsidian 学习库分类：</label>
+            <select v-model="importTargetFolder" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800 text-xs">
+              <option value="_当前学习">🔥 _当前学习 (优先推荐)</option>
+              <option v-for="c in studyCategories" :key="c.folder" :value="c.folder">
+                {{ c.icon }} {{ c.title }} ({{ c.folder }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Tab 1: URL 抓取 -->
+          <div v-if="importTab === 'url'" class="space-y-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">🔗 文章或网页链接 (URL)：</label>
+              <input 
+                v-model="importUrlInput" 
+                type="text" 
+                placeholder="https://mp.weixin.qq.com/... 或知乎/博客链接" 
+                class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800 text-xs">
+              <p class="text-[11px] text-slate-400 mt-1">自动剥离广告导航，提取纯净标题与正文并存为标准 Markdown</p>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">🏷️ 自定义资料标题 (可选)：</label>
+              <input v-model="importCustomTitle" type="text" placeholder="留空则自动提取网页标题" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800 text-xs">
+            </div>
+          </div>
+
+          <!-- Tab 2: 从 OneDrive 书库引入 -->
+          <div v-if="importTab === 'book'" class="space-y-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">📖 选择要引入的书籍：</label>
+              <select v-model="importSelectedBookPath" class="w-full px-3 py-2 border rounded-xl bg-slate-50 focus:bg-white text-slate-800 text-xs">
+                <option value="">-- 点击选择书籍 (2835本中筛选) --</option>
+                <option v-for="b in books.slice(0, 150)" :key="b.fullPath" :value="b.fullPath">
+                  [{{ b.ext.toUpperCase() }}] {{ b.name }} ({{ b.folder }})
+                </option>
+              </select>
+              <p class="text-[11px] text-slate-400 mt-1">将把该书的结构指针与核心文本建立为智学项目，方便 AI 答疑与出题测验</p>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">🏷️ 自定义课题标题 (可选)：</label>
+              <input v-model="importCustomTitle" type="text" placeholder="如：《某个书名》核心研读" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800 text-xs">
+            </div>
+          </div>
+
+          <!-- Tab 3: 手动粘贴 -->
+          <div v-if="importTab === 'text'" class="space-y-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">🏷️ 资料标题：</label>
+              <input v-model="importCustomTitle" type="text" placeholder="输入学习主题名称" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800 text-xs">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">📝 粘贴学习正文：</label>
+              <textarea v-model="importTextInput" rows="6" placeholder="粘贴文字或 Markdown 内容..." class="w-full p-2.5 border rounded-xl bg-slate-50 text-slate-800 text-xs"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 弹窗底栏行动 -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-2">
+          <button @click="showImportModal = false" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">取消</button>
+          <button 
+            @click="submitImport" 
+            :disabled="isImporting"
+            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1">
+            <span v-if="isImporting" class="inline-block animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></span>
+            <span>{{ isImporting ? '正在抓取并存入...' : '确认引入至学习库' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 🌟 全局模态框：先行导读 Slide 幻灯片秀 -->
     <!-- ======================================================== -->
     <div v-if="showSlideModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        <!-- Slide 顶栏 -->
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div class="flex items-center space-x-2">
             <span class="w-3 h-3 rounded-full bg-orange-500"></span>
@@ -384,16 +588,13 @@
           <button @click="showSlideModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕ 关闭</button>
         </div>
 
-        <!-- Slide 主内容区 -->
         <div class="flex-1 p-8 sm:p-12 overflow-y-auto flex items-center justify-center min-h-[420px]">
-          <!-- 生成中状态 -->
           <div v-if="isLoadingSlides" class="text-center space-y-4">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
             <p class="font-bold text-slate-900 text-base">FreeLLMAPI 正在深研全书架构与关键脉络...</p>
             <p class="text-xs text-slate-400">严格生成 5~6 页结构化导读 Slide，提炼灵魂洞见与冲击点</p>
           </div>
 
-          <!-- 幻灯片卡片 -->
           <div v-else-if="currentSlide" class="w-full max-w-2xl space-y-6">
             <div class="flex items-center justify-between">
               <span class="px-3.5 py-1 bg-orange-100 text-orange-800 text-xs font-extrabold rounded-full">
@@ -411,7 +612,6 @@
               </p>
             </div>
 
-            <!-- Bullet 要点渲染（利用 marked 杜绝任何源码出现） -->
             <div v-if="currentSlide.bullets && currentSlide.bullets.length > 0" class="space-y-3 pt-2">
               <div 
                 v-for="(b, bIdx) in currentSlide.bullets" :key="bIdx"
@@ -423,7 +623,6 @@
           </div>
         </div>
 
-        <!-- Slide 底栏翻页与行动 -->
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <button 
@@ -440,7 +639,6 @@
             </button>
           </div>
 
-          <!-- 导航指示圆点 -->
           <div class="hidden sm:flex items-center space-x-1.5">
             <span 
               v-for="(_, idx) in slides" :key="idx"
@@ -449,7 +647,6 @@
               class="h-2 rounded-full cursor-pointer transition-all"></span>
           </div>
 
-          <!-- 保存与精读 -->
           <div class="flex items-center space-x-2">
             <button 
               @click="saveSlidesToObsidian" 
@@ -467,30 +664,27 @@
     </div>
 
     <!-- ======================================================== -->
-    <!-- 🌟 全局模态框二：交互式智能测验与成绩记录系统 -->
+    <!-- 🌟 全局模态框：交互式智能测验与成绩记录系统 (保证 4~5 题) -->
     <!-- ======================================================== -->
     <div v-if="showQuizModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <!-- 测验顶栏 -->
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div class="flex items-center space-x-2">
             <span class="w-3 h-3 rounded-full bg-indigo-600"></span>
             <span class="font-bold text-slate-900 text-sm">智能理解测验 · {{ quizTargetTitle }}</span>
             <span v-if="quizQuestions.length > 0" class="text-xs text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full">
-              已作答 {{ answeredCount }} / {{ quizQuestions.length }}
+              已作答 {{ answeredCount }} / {{ quizQuestions.length }} 题
             </span>
           </div>
           <button @click="showQuizModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕ 关闭</button>
         </div>
 
-        <!-- 题目列表与交互区 -->
         <div class="flex-1 p-6 sm:p-8 overflow-y-auto space-y-6">
           <div v-if="isLoadingQuiz" class="py-16 text-center space-y-3">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent"></div>
-            <p class="font-bold text-slate-900 text-sm">AI 正在深度研读本篇核心逻辑，生成针对性考题...</p>
+            <p class="font-bold text-slate-900 text-sm">AI 正在深度研读本篇核心逻辑，严格生成 4~5 道深度考题...</p>
           </div>
 
-          <!-- 交互式题目卡片 -->
           <div v-else-if="quizQuestions.length > 0" class="space-y-6">
             <div 
               v-for="(q, qIdx) in quizQuestions" :key="q.id"
@@ -506,7 +700,7 @@
                   v-if="q.userSelected !== undefined"
                   :class="q.userSelected === q.answer ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
                   class="px-2.5 py-0.5 text-xs font-bold rounded-full shrink-0">
-                  {{ q.userSelected === q.answer ? '✅ 正确 (+25分)' : '❌ 答错' }}
+                  {{ q.userSelected === q.answer ? '✅ 正确' : '❌ 答错' }}
                 </span>
               </div>
 
@@ -523,14 +717,13 @@
                 </button>
               </div>
 
-              <!-- 解析展开区 -->
               <div v-if="q.userSelected !== undefined" class="mt-4 pt-4 border-t border-slate-200/80 text-xs leading-relaxed text-slate-700">
                 <span class="font-bold text-slate-900 block mb-1">💡 深度解析与机制推导：</span>
                 <p>{{ q.explanation }}</p>
               </div>
             </div>
 
-            <!-- 成绩结算卡 (作答完毕时呈现) -->
+            <!-- 成绩结算卡 -->
             <div v-if="answeredCount === quizQuestions.length" class="p-6 bg-gradient-to-r from-indigo-900 to-violet-900 text-white rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <div class="text-xs text-indigo-200 font-medium">本次测验成绩结算</div>
@@ -539,7 +732,7 @@
                   <span class="text-sm font-normal text-indigo-200">({{ correctCount }} / {{ quizQuestions.length }} 正确)</span>
                 </div>
                 <p class="text-xs text-indigo-300 mt-1">
-                  {{ quizScore >= 80 ? '🌟 融会贯通！核心机制掌握非常扎实' : '📖 建议针对解析中的逻辑脉络重温重点段落' }}
+                  {{ quizScore >= 80 ? '🌟 融会贯通！核心机制掌握非常扎实' : '📖 建议针对错题解析中的逻辑重温重点内容' }}
                 </p>
               </div>
 
@@ -554,9 +747,7 @@
       </div>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- 🌟 全局模态框三：历史测验战绩榜单 -->
-    <!-- ======================================================== -->
+    <!-- 战绩历史模态框 -->
     <div v-if="showScoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -615,7 +806,6 @@
           <div>
             <label class="block font-semibold text-slate-700 mb-1">🚫 学习库忽略文件夹 (逗号分隔)</label>
             <input v-model="ignoreFoldersInput" type="text" placeholder="如: _指令集, copilot, Clippings, 使用手册" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-slate-800">
-            <p class="text-[11px] text-slate-400 mt-1">默认自动过滤系统配置与辅助插件文件夹（保留 _当前学习）</p>
           </div>
         </div>
 
@@ -626,7 +816,7 @@
       </div>
     </div>
 
-    <!-- 提示条 -->
+    <!-- 底部状态小提示 -->
     <div v-if="toastMessage" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce">
       <span>{{ toastMessage }}</span>
     </div>
@@ -634,11 +824,11 @@
   </div>
 
   <script>
-    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+    const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
 
     createApp({
       setup() {
-        const currentWorkspace = ref('reading'); // 'reading' (书库) or 'study' (学习库)
+        const currentWorkspace = ref('reading'); // 'reading' or 'study'
         const currentView = ref('bookshelf'); // 'bookshelf' or 'reader'
         const books = ref([]);
         const isLoadingBooks = ref(false);
@@ -658,7 +848,7 @@
           model: 'auto'
         });
 
-        // 伴读模式状态
+        // 伴读状态
         const currentBook = ref(null);
         const parsedChapters = ref([]);
         const currentChapterIndex = ref(0);
@@ -671,6 +861,21 @@
         const activeStudyNote = ref(null);
         const activeStudyNoteContent = ref('');
 
+        // 智学 AI 研讨室状态
+        const chatMessages = ref([]);
+        const chatInput = ref('');
+        const isSendingChat = ref(false);
+
+        // 引入学习资料状态
+        const showImportModal = ref(false);
+        const importTab = ref('url'); // 'url', 'book', 'text'
+        const importTargetFolder = ref('_当前学习');
+        const importUrlInput = ref('');
+        const importSelectedBookPath = ref('');
+        const importCustomTitle = ref('');
+        const importTextInput = ref('');
+        const isImporting = ref(false);
+
         // 导读 Slide 状态
         const showSlideModal = ref(false);
         const currentSlideBook = ref(null);
@@ -678,7 +883,7 @@
         const currentSlideIndex = ref(0);
         const isLoadingSlides = ref(false);
 
-        // 交互测验系统状态
+        // 交互测验状态
         const showQuizModal = ref(false);
         const isLoadingQuiz = ref(false);
         const quizTargetTitle = ref('');
@@ -770,9 +975,7 @@
 
         const switchWorkspace = (ws) => {
           currentWorkspace.value = ws;
-          if (ws === 'reading') {
-            if (!currentBook.value) currentView.value = 'bookshelf';
-          }
+          if (ws === 'reading' && !currentBook.value) currentView.value = 'bookshelf';
         };
 
         const availableExts = computed(() => {
@@ -798,7 +1001,7 @@
           return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         };
 
-        // 🌟 开启先行导读 Slide 幻灯片秀
+        // 🌟 先行导读 Slide
         const openSlideDeck = async (book) => {
           currentSlideBook.value = book;
           slides.value = [];
@@ -824,7 +1027,7 @@
             }
           } catch (e) {
             slides.value = [
-              { tag: '灵魂速览', title: book.name, subtitle: '开启精读', bullets: ['一键进入沉浸阅读', '支持原文抽屉与 AI 问答'] }
+              { tag: '灵魂一句话', title: book.name, subtitle: '开启精读之旅', bullets: ['一键进入沉浸阅读', '支持原文抽屉与 AI 问答'] }
             ];
           } finally {
             isLoadingSlides.value = false;
@@ -832,19 +1035,9 @@
         };
 
         const currentSlide = computed(() => slides.value[currentSlideIndex.value] || null);
-
-        const prevSlide = () => {
-          if (currentSlideIndex.value > 0) currentSlideIndex.value--;
-        };
-
-        const nextSlide = () => {
-          if (currentSlideIndex.value < slides.value.length - 1) currentSlideIndex.value++;
-        };
-
-        const startReadingFromSlide = () => {
-          showSlideModal.value = false;
-          openReader(currentSlideBook.value);
-        };
+        const prevSlide = () => { if (currentSlideIndex.value > 0) currentSlideIndex.value--; };
+        const nextSlide = () => { if (currentSlideIndex.value < slides.value.length - 1) currentSlideIndex.value++; };
+        const startReadingFromSlide = () => { showSlideModal.value = false; openReader(currentSlideBook.value); };
 
         const saveSlidesToObsidian = async () => {
           if (!currentSlideBook.value || slides.value.length === 0) return;
@@ -855,9 +1048,7 @@
           slides.value.forEach((s, idx) => {
             md += `### Slide ${idx + 1}: ${s.title}\n`;
             if (s.subtitle) md += `*${s.subtitle}*\n\n`;
-            if (s.bullets) {
-              s.bullets.forEach(b => md += `- ${b}\n`);
-            }
+            if (s.bullets) s.bullets.forEach(b => md += `- ${b}\n`);
             md += `\n---\n\n`;
           });
 
@@ -959,9 +1150,7 @@
             const chapTitle = h ? h.textContent.trim() : `第 ${chapters.length + 1} 节`;
             const chapContent = doc.body ? doc.body.innerText.trim() : '';
 
-            if (chapContent.length > 50) {
-              chapters.push({ title: chapTitle, content: chapContent });
-            }
+            if (chapContent.length > 50) chapters.push({ title: chapTitle, content: chapContent });
           }
 
           parsedChapters.value = chapters.length > 0 ? chapters : [{ title: title, content: 'EPUB 解析正文' }];
@@ -986,6 +1175,7 @@
           activeStudyNote.value = note;
           activeStudyNoteContent.value = '正在加载笔记...';
           feynmanAnswer.value = '';
+          chatMessages.value = [];
           try {
             const res = await fetch(`/api/study/note?path=${encodeURIComponent(note.fullPath)}`);
             activeStudyNoteContent.value = await res.text();
@@ -994,7 +1184,183 @@
           }
         };
 
-        // 划线与费曼交互
+        // 🌟 引入学习资料功能处理
+        const submitImport = async () => {
+          isImporting.value = true;
+          try {
+            if (importTab.value === 'url') {
+              if (!importUrlInput.value) throw new Error('请输入网页链接');
+              const res = await fetch('/api/study/import-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  url: importUrlInput.value,
+                  folder: importTargetFolder.value,
+                  customTitle: importCustomTitle.value
+                })
+              });
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              showToast(`✅ 网页资料已成功存入 Obsidian 学习库！`);
+              importUrlInput.value = '';
+            } else if (importTab.value === 'book') {
+              if (!importSelectedBookPath.value) throw new Error('请选择一本书');
+              const res = await fetch('/api/study/import-book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  bookPath: importSelectedBookPath.value,
+                  folder: importTargetFolder.value,
+                  customTitle: importCustomTitle.value
+                })
+              });
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              showToast(`✅ 图书研读课题已成功创建至学习库！`);
+            } else if (importTab.value === 'text') {
+              if (!importCustomTitle.value || !importTextInput.value) throw new Error('请输入标题和内容');
+              const res = await fetch('/api/obsidian/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  vaultType: 'study',
+                  subfolder: importTargetFolder.value,
+                  fileName: importCustomTitle.value,
+                  content: `# ${importCustomTitle.value}\n\n${importTextInput.value}`
+                })
+              });
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              showToast(`✅ 学习资料已保存至 Obsidian！`);
+              importCustomTitle.value = '';
+              importTextInput.value = '';
+            }
+            showImportModal.value = false;
+            loadStudyTopics();
+          } catch(e) {
+            alert('引入失败: ' + e.message);
+          } finally {
+            isImporting.value = false;
+          }
+        };
+
+        // 🌟 智学 AI 探讨室聊天处理
+        const sendChatMessage = async () => {
+          const q = chatInput.value.trim();
+          if (!q || isSendingChat.value || !activeStudyNote.value) return;
+
+          chatMessages.value.push({ role: 'user', content: q });
+          chatInput.value = '';
+          isSendingChat.value = true;
+
+          nextTick(() => {
+            const container = document.getElementById('chatContainer');
+            if (container) container.scrollTop = container.scrollHeight;
+          });
+
+          try {
+            const res = await fetch('/api/study/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                noteTitle: activeStudyNote.value.name,
+                noteContent: activeStudyNoteContent.value,
+                messages: chatMessages.value
+              })
+            });
+            const data = await res.json();
+            if (data.reply) {
+              chatMessages.value.push({ role: 'assistant', content: data.reply });
+            } else {
+              chatMessages.value.push({ role: 'assistant', content: '暂未获得有效回答' });
+            }
+          } catch(e) {
+            chatMessages.value.push({ role: 'assistant', content: '请求失败: ' + e.message });
+          } finally {
+            isSendingChat.value = false;
+            nextTick(() => {
+              const container = document.getElementById('chatContainer');
+              if (container) container.scrollTop = container.scrollHeight;
+            });
+          }
+        };
+
+        const handleChatEnter = (e) => {
+          if (!e.shiftKey) sendChatMessage();
+        };
+
+        const sendQuickPrompt = (promptText) => {
+          chatInput.value = promptText;
+          sendChatMessage();
+        };
+
+        const sendSelectedToChat = () => {
+          if (!selectedText.value) return;
+          chatInput.value = `请深入剖析这一段核心逻辑：“${selectedText.value}”`;
+          selectedText.value = '';
+          sendChatMessage();
+        };
+
+        // 🌟 沉淀单条问答至 Obsidian 笔记
+        const appendSingleChatToNote = async (mIdx) => {
+          if (!activeStudyNote.value || mIdx <= 0) return;
+          const userQ = chatMessages.value[mIdx - 1]?.content || '核心提问';
+          const aiA = chatMessages.value[mIdx]?.content || '';
+
+          const block = `### 💬 AI 学习研讨记录 (${new Date().toLocaleString()})\n> **问**：${userQ}\n\n**AI 助教解答**：\n${aiA}\n\n---\n`;
+          try {
+            const res = await fetch('/api/study/append-note', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filePath: activeStudyNote.value.fullPath,
+                content: block
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast('✅ 该问答已追加沉淀至当前 Obsidian 笔记末尾！');
+              const r = await fetch(`/api/study/note?path=${encodeURIComponent(activeStudyNote.value.fullPath)}`);
+              activeStudyNoteContent.value = await r.text();
+            }
+          } catch(e) {
+            alert('沉淀失败: ' + e.message);
+          }
+        };
+
+        // 🌟 沉淀本轮全部问答至 Obsidian 笔记
+        const appendAllChatToNote = async () => {
+          if (!activeStudyNote.value || chatMessages.value.length === 0) return;
+          let block = `\n\n## 💬 AI 专题研讨合辑 (${new Date().toLocaleString()})\n\n`;
+          for (let i = 0; i < chatMessages.value.length; i += 2) {
+            const u = chatMessages.value[i]?.content;
+            const a = chatMessages.value[i+1]?.content;
+            if (u && a) {
+              block += `#### 探讨 ${i/2 + 1}: ${u}\n${a}\n\n---\n\n`;
+            }
+          }
+
+          try {
+            const res = await fetch('/api/study/append-note', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filePath: activeStudyNote.value.fullPath,
+                content: block
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast('✅ 全套对话已成功沉淀至当前 Obsidian 笔记！');
+              const r = await fetch(`/api/study/note?path=${encodeURIComponent(activeStudyNote.value.fullPath)}`);
+              activeStudyNoteContent.value = await r.text();
+            }
+          } catch(e) {
+            alert('沉淀失败: ' + e.message);
+          }
+        };
+
+        // 划线交互
         const handleTextSelect = () => {
           const sel = window.getSelection().toString().trim();
           if (sel.length > 2) selectedText.value = sel;
@@ -1051,7 +1417,7 @@
           }
         };
 
-        // 🌟 交互式智能测验触发器
+        // 🌟 交互式智能测验触发器 (保证 4~5 题)
         const triggerInteractiveQuiz = async (title, content) => {
           quizTargetTitle.value = title;
           quizQuestions.value = [];
@@ -1093,26 +1459,19 @@
           return 'bg-white border-slate-100 text-slate-400 opacity-60';
         };
 
-        const answeredCount = computed(() => {
-          return quizQuestions.value.filter(q => q.userSelected !== undefined).length;
-        });
-
-        const correctCount = computed(() => {
-          return quizQuestions.value.filter(q => q.userSelected === q.answer).length;
-        });
-
+        const answeredCount = computed(() => quizQuestions.value.filter(q => q.userSelected !== undefined).length);
+        const correctCount = computed(() => quizQuestions.value.filter(q => q.userSelected === q.answer).length);
         const quizScore = computed(() => {
           if (quizQuestions.value.length === 0) return 0;
           return Math.round((correctCount.value / quizQuestions.value.length) * 100);
         });
 
-        // 记录成绩并沉淀至 Obsidian
+        // 记录测验成绩并存入 Obsidian
         const recordQuizScoreAndSaveObsidian = async () => {
           const isStudy = currentWorkspace.value === 'study';
           const targetTitle = quizTargetTitle.value;
           const score = quizScore.value;
 
-          // 1. 记录本地战绩
           await fetch('/api/study/record-score', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1125,7 +1484,6 @@
           });
           loadScoreHistory();
 
-          // 2. 生成错题本与总结 Markdown
           let md = `\n\n### 🧠 智能测验报告 (${new Date().toLocaleDateString()})\n`;
           md += `- **得分**: **${score} 分** (${correctCount.value} / ${quizQuestions.value.length} 题正确)\n`;
           md += `- **掌握评估**: ${score >= 80 ? '🌟 精准掌握' : '📖 需巩固重点'}\n\n`;
@@ -1140,10 +1498,9 @@
               md += `   - 机制解析: ${wq.explanation}\n\n`;
             });
           } else {
-            md += `*全部答对！完美通过本章核心逻辑测验！*\n\n`;
+            md += `*全部答对！完美通过核心逻辑测验！*\n\n`;
           }
 
-          // 3. 保存入 Obsidian 对应的库
           try {
             await fetch('/api/obsidian/save', {
               method: 'POST',
@@ -1156,14 +1513,13 @@
                 append: true
               })
             });
-            showToast(`✅ 测验战绩与错题已成功存入 Obsidian ${isStudy ? '学习库' : '读后库'}！`);
+            showToast(`✅ 测验战绩与错题已成功存入 Obsidian！`);
             showQuizModal.value = false;
           } catch(e) {
             alert('存入失败: ' + e.message);
           }
         };
 
-        // 键盘翻页监听
         const handleKeyDown = (e) => {
           if (showSlideModal.value) {
             if (e.key === 'ArrowLeft') prevSlide();
@@ -1211,6 +1567,26 @@
           activeStudyNote,
           activeStudyNoteContent,
           openStudyNote,
+          // 引入学习资料
+          showImportModal,
+          importTab,
+          importTargetFolder,
+          importUrlInput,
+          importSelectedBookPath,
+          importCustomTitle,
+          importTextInput,
+          isImporting,
+          submitImport,
+          // 智学 AI 研讨室
+          chatMessages,
+          chatInput,
+          isSendingChat,
+          sendChatMessage,
+          handleChatEnter,
+          sendQuickPrompt,
+          sendSelectedToChat,
+          appendSingleChatToNote,
+          appendAllChatToNote,
           // 导读 Slide
           showSlideModal,
           currentSlideBook,
