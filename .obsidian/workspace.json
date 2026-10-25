@@ -55,16 +55,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "source/_posts/有两个概念是主观的.md",
+                "file": "source/_posts/hello.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "有两个概念是主观的"
+              "title": "hello"
+            }
+          },
+          {
+            "id": "b93af99ebc9d581d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "source/_posts/人与人的差别越来越大.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "人与人的差别越来越大"
             }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -84,7 +98,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "byModifiedTime",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "文件列表"
@@ -228,8 +244,14 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "e79253aa08eba0d6",
+  "active": "b93af99ebc9d581d",
   "lastOpenFiles": [
+    "source/_posts/hello.md",
+    "source/_posts/人与人的差别越来越大.md",
+    "source/_posts/novels/mo-shi-hui-dang/004_按表办事.md",
+    "source/_posts/novels/mo-shi-hui-dang/002_余额.md",
+    "source/_posts/novels/mo-shi-hui-dang/005_两公里.md",
+    "source/_posts/novels/mo-shi-hui-dang/003_不该活着的人.md",
     "source/_posts/20260422180857.md",
     "source/_posts/有两个概念是主观的.md",
     "source/_posts/20260426060845.md",
@@ -269,12 +291,6 @@
     "themes/keep/source/images/brands/aliyun.png",
     "themes/keep/source/images/logo.svg",
     "themes/keep/source/images/bg2.svg",
-    "themes/keep/docs/README_zh-TW.md",
-    "themes/keep/docs/README_zh-CN.md",
-    "scaffolds/draft.md",
-    "scaffolds/page.md",
-    "node_modules/acorn/README.md",
-    "node_modules/acorn/CHANGELOG.md",
-    "node_modules/promise/Readme.md"
+    "themes/keep/docs/README_zh-TW.md"
   ]
 }
